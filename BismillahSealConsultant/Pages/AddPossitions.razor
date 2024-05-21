@@ -1,0 +1,344 @@
+﻿@page "/addpossitions"
+@inject NavigationManager nav
+
+
+@if (rollsLoading)
+{
+
+    <Chase Size="100px" style="margin-left:45%; margin-top: 45vh;"></Chase>
+
+}
+else
+{
+
+    @if (logger.checkAccess("/addpossitions", rollId))
+    {
+
+        <div class="container-fluid shadow">
+            <div class="row">
+                <div class="col-2">
+                    <div class="input-group">
+                        <input placeholder="Possition name" @bind="p.Name" class="form-control">
+
+                        @if (savingPossition)
+                        {
+                            <Pulse Size="30px"></Pulse>
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary" @onclick="addPossition"> Add </button>
+                        }
+
+
+
+                        @if (isupdating)
+                        {
+                            <Pulse Size="30px"></Pulse>
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary" @onclick="ToggeleUserActive">save</button>
+                        }
+
+                    </div>
+                </div>
+
+
+            </div>
+
+            <div class="row" style="margin-top:25px">
+                <div class="col-4">
+                    <table class="table table-bordered border-primary table-sm" style="border-color:#17A2B8 !important">
+                        <thead>
+                            <tr>
+                                <th>
+                                    Possition Name
+                                </th>
+                                <th>
+                                    -
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var ro in rolls)
+                            {
+                                <tr>
+                                    <td>
+                                        @ro.Name
+                                    </td>
+
+
+                                    <td class="close-btn-table-width">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" @bind="ro.Isactive">
+                                            <label class="form-check-label" for="flexSwitchCheckDefault">Active</label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+
+
+                    </table>
+
+
+                </div>
+
+
+                <div class="col-6">
+
+                    <div class="row">
+                        <div class="col">
+                            <div class="input-group">
+                                <select class="form-select form-select-sm" aria-label=".form-select-sm example" @bind="selectedRollid">
+                                    <option selected null> Please select a roll </option>
+                                    @foreach (var r in rolls)
+                                    {
+                                        <option value="@r.Id">@r.Name</option>
+                                    }
+
+                                </select>
+
+                                <button class="btn btn-primary" @onclick="makeAdmin">Make Admin</button>
+
+                            </div>
+                        </div>
+
+
+
+                    </div>
+                    <div class="row p-1">
+                        <div class="col">
+                            <table class="table table-primary">
+
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            Possition Name
+                                        </th>
+                                        <th>
+                                            Employee
+                                        </th>
+                                        <th>
+
+                                        </th>
+                                    </tr>
+
+
+                                </thead>
+                                <tbody>
+
+                                    @foreach (Admin a in admins)
+                                    {
+                                        <tr @onclick="@(()=>nav.NavigateTo($"/access/{a.Id}"))">
+                                            <td>
+                                                @rolls.FirstOrDefault(x=>x.Id == a .Rollid)?.Name
+                                            </td>
+                                            <td>
+                                                <table class="table table-secondary">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>
+                                                                Name
+                                                            </th>
+                                                            <th>
+                                                                Code
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+
+                                                    <tbody>
+                                                        @foreach (Employee e in employees.Where(x => x.RollId == a.Rollid))
+                                                        {
+                                                            <tr>
+                                                                <td>
+                                                                    @e?.FirstName &nbsp; @e?.LastName
+                                                                </td>
+                                                                <td>
+                                                                    @e?.EmployeeCode
+                                                                </td>
+                                                            </tr>
+
+
+                                                        }
+
+
+                                                    </tbody>
+                                                </table>
+
+
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-danger">
+                                                    Remove
+                                                </button>
+                                            </td>
+                                        </tr>
+
+                                    }
+
+
+
+
+                                </tbody>
+
+
+                            </table>
+                        </div>
+
+
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+}
+
+
+@code {
+
+
+
+    bool saving = false;
+    bool savingPossition = false;
+    bool isupdating = false;
+    bool isadingAdmin = false;
+
+    Roll p = new Roll();
+    bool rollsLoading = true;
+    List<Roll> rolls = new List<Roll>();
+    List<Employee> employees = new List<Employee>();
+    List<Admin> admins = new List<Admin>();
+
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+
+    Guid selectedRollid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        rollsLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            rolls = await dbcontext.Rolls.ToListAsync();
+
+            employees = await dbcontext.Employees.ToListAsync();
+
+            admins = await dbcontext.Admins.ToListAsync();
+
+            rollId = await localStorage.GetItemAsync<string>("Roll");
+        }
+
+
+        rollsLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+
+    }
+
+    async Task addPossition()
+    {
+        savingPossition = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            p.Id = Guid.NewGuid();
+            p.Isactive = true;
+            dbcontext.Rolls.Add(p);
+            await dbcontext.SaveChangesAsync();
+            rolls = await dbcontext.Rolls.ToListAsync();
+            p = new Roll();
+
+        }
+        savingPossition = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task makeAdmin()
+    {
+        isadingAdmin = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            try
+            {
+
+                var ad = await dbcontext.Admins.FirstOrDefaultAsync(x => x.Rollid == selectedRollid);
+                if (ad == null)
+                {
+                    Admin a = new Admin
+                        {
+                            Id = Guid.NewGuid(),
+                            Rollid = selectedRollid
+
+                        };
+
+                    dbcontext.Admins.Add(a);
+                    admins = await dbcontext.Admins.ToListAsync();
+                    await dbcontext.SaveChangesAsync();
+
+                }
+
+
+
+
+
+            }
+            catch
+            {
+
+            }
+
+
+        }
+        isadingAdmin = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    async Task ToggeleUserActive()
+    {
+        isupdating = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            try
+            {
+
+
+                dbcontext.Rolls.UpdateRange(rolls);
+                rolls = await dbcontext.Rolls.ToListAsync();
+
+                await dbcontext.SaveChangesAsync();
+            }
+            catch
+            {
+
+            }
+
+
+        }
+        isupdating = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+}

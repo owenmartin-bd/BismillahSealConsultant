@@ -1,0 +1,348 @@
+﻿@page "/AdvanceApprove"
+
+@if (loading)
+{
+    <Chase></Chase>
+}
+else
+{
+    <div class="container-fluid">
+
+        <div class="row">
+
+            <div class="col-6 p-1">
+                <div class="my-2">
+                    <h5> Waiting Approval </h5>
+                </div>
+                <div class="my-1">
+                    @if (updating)
+                    {
+                        <Chase></Chase>
+                    }
+                    else
+                    {
+                        <button class="btn btn-primary" @onclick="update">Update</button>
+                    }
+
+                </div>
+
+                <table class="table table-secondary shadow-lg p-2">
+                    <thead>
+                        <tr>
+                            <th>
+                                Employee Requested
+                            </th>
+                            <th>
+                                Amount
+                            </th>
+                            <th>
+                                Requested By
+                            </th>
+
+                            <th>
+                                Date Requested
+                            </th>
+                            <th>
+
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in advancestoRequested)
+                        {
+                            <tr>
+                                <td>
+                                    @employeeList.FirstOrDefault(x=>x.Id == a.EmployeeId)?.FirstName&nbsp;@employeeList.FirstOrDefault(x=>x.Id == a.EmployeeId)?.LastName
+                                </td>
+                                <td>
+                                    @a.Amount
+                                </td>
+
+                                <td>
+                                    @employeeList.FirstOrDefault(x=>x.Id == a.RequestBy)?.FirstName&nbsp;@employeeList.FirstOrDefault(x=>x.Id == a.RequestBy)?.LastName
+                                </td>
+
+
+                                <td>
+                                    @a.RequestedDate
+                                </td>
+                                <td>
+                                    <div class="input-group">
+
+                                        @if (!updating)
+                                        {
+                                            if (a.Approved == true)
+                                            {
+                                                <button class="btn btn-success" @onclick="()=>{a.Approved=true; a.ApprovalDate = DateOnly.FromDateTime(DateTime.Now); a.ApprovedBy=Userid;}">Approve</button>
+
+                                                <button class="btn btn-secondary" @onclick="()=>{a.Approved=false; a.ApprovalDate = DateOnly.FromDateTime(DateTime.Now); a.ApprovedBy=Userid;}">Reject</button>
+                                            }
+                                            else if (a.Approved == false)
+                                            {
+                                                <button class="btn btn-secondary" @onclick="()=>{a.Approved=true; a.ApprovalDate = DateOnly.FromDateTime(DateTime.Now); a.ApprovedBy=Userid;}">Approve</button>
+
+                                                <button class="btn btn-danger" @onclick="()=>{a.Approved=false; a.ApprovalDate = DateOnly.FromDateTime(DateTime.Now); a.ApprovedBy=Userid;}">Reject</button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-success" @onclick="()=>{a.Approved=true; a.ApprovalDate = DateOnly.FromDateTime(DateTime.Now); a.ApprovedBy=Userid;}">Approve</button>
+
+                                                <button class="btn btn-danger" @onclick="()=>{a.Approved=false; a.ApprovalDate = DateOnly.FromDateTime(DateTime.Now);a.ApprovedBy=Userid;}">Reject</button>
+                                            }
+
+                                        }
+
+
+
+
+                                    </div>
+                                </td>
+
+                            </tr>
+
+                        }
+                    </tbody>
+                </table>
+
+            </div>
+
+            <div class="col-6 p-1">
+
+                <div class="row">
+
+                    <div class="col-6">
+                        <div class="input-group m-1">
+                            <span class="input-group-text" id="basic-addon1"> Select Request Date </span>
+                            <input class="form-control" type="date" @bind=date>
+                            @if (gettingData)
+                            {
+
+                                <Flow></Flow>
+                            }
+                            else
+                            {
+                                <button class="btn btn-info" @onclick="GetData"> Get Data </button>
+                            }
+
+
+
+                        </div>
+                    </div>
+
+
+                </div>
+
+                <div class="row p-1">
+
+                    <div class="col">
+
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Employee Requested
+                                    </th>
+                                    <th>
+                                        Amount
+                                    </th>
+                                    <th>
+                                        Requested by
+                                    </th>
+
+
+                                    <th>
+                                        Date Requested
+                                    </th>
+
+                                    <th>
+                                        Approved by
+                                    </th>
+                                    <th>
+                                        Date Approved
+                                    </th>
+                                    <th>
+                                        Status
+                                    </th>
+                                    <th>
+                                        Dispatched Date
+                                    </th>
+
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in advances)
+                                {
+                                    <tr>
+                                        <td>
+                                            @employeeList.FirstOrDefault(x=>x.Id == a.EmployeeId)?.FirstName&nbsp;@employeeList.FirstOrDefault(x=>x.Id == a.EmployeeId)?.LastName
+                                        </td>
+                                        <td>
+                                            @a.Amount
+                                        </td>
+                                        <td>
+                                            @employeeList.FirstOrDefault(x=>x.Id == a.RequestBy)?.FirstName&nbsp;@employeeList.FirstOrDefault(x=>x.Id == a.RequestBy)?.LastName
+                                        </td>
+                                        <td>
+                                            @a.RequestedDate
+                                        </td>
+
+                                        <td>
+                                            @employeeList.FirstOrDefault(x=>x.Id == a.ApprovedBy)?.FirstName&nbsp;@employeeList.FirstOrDefault(x=>x.Id == a.ApprovedBy)?.LastName
+                                        </td>
+
+                                        <td>
+                                            @a.ApprovalDate
+                                        </td>
+                                        <td>
+                                            @if (a.Detchpatched == true && a.Approved == true)
+                                            {
+
+                                                <div class="alert alert-success" role="alert">
+                                                    Dispatched
+                                                </div>
+
+                                            }
+                                            @if (a.Detchpatched != true && a.Approved == true)
+                                            {
+
+                                                <div class="alert alert alert-warning" role="alert">
+                                                   Awating Dispatch
+                                                </div>
+
+                                            }
+                                          
+                                            else if (a.Approved == false)
+                                            {
+                                                <div class="alert alert-danger" role="alert">
+                                                    Rejected
+                                                </div>
+                                            }
+                                            else if (a.Approved == null)
+                                            {
+                                                <div class="alert alert-warning" role="alert">
+                                                    Awaiting Approval
+                                                </div>
+                                            }
+                                           
+
+
+                                        </td>
+
+
+                                    </tr>
+
+                                }
+
+
+                            </tbody>
+                        </table>
+
+                    </div>
+
+
+                </div>
+
+
+
+
+
+
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+}
+
+
+
+
+@code {
+    List<Employee> employeeList = new List<Employee>();
+    List<Advance> advancestoRequested = new List<Advance>();
+    List<Advance> advances = new List<Advance>();
+    bool loading = true;
+    bool gettingData = false;
+    bool updating = false;
+    Guid Userid;
+    DateOnly date = DateOnly.FromDateTime(DateTime.Now);
+
+    string rollId = string.Empty;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+            employeeList = await dbcontext.Employees.Where(x => x.Level != "Staff" && x.Level != "Admin").OrderByDescending(x => x.Active).ThenBy(x => x.FirstName).ToListAsync();
+
+
+
+
+            Userid = await localStorage.GetItemAsync<Guid>("ID");
+
+
+
+            rollId = await localStorage.GetItemAsync<string>("Roll");
+
+
+
+
+            advancestoRequested = await dbcontext.Advances.Where(x => x.Requested == true && x.Approved == null).ToListAsync();
+        }
+
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+
+    async Task GetData()
+    {
+        gettingData = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            dbcontext.Advances.UpdateRange(advancestoRequested);
+
+            await dbcontext.SaveChangesAsync();
+
+            advances = await dbcontext.Advances.Where(x => x.RequestedDate == date).ToListAsync();
+        }
+
+        gettingData = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    async Task update()
+    {
+        updating = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            dbcontext.Advances.UpdateRange(advancestoRequested);
+
+            await dbcontext.SaveChangesAsync();
+
+            advancestoRequested = await dbcontext.Advances.Where(x => x.Requested == true && x.Approved == null).ToListAsync();
+        }
+
+        updating = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+}

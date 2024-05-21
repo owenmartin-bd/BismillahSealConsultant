@@ -1,0 +1,1504 @@
+﻿@page "/ditchpatchPayroll"
+@inject NavigationManager nav
+@using System.Globalization
+@implements IDisposable
+
+
+@if (loading)
+{
+    <Chase Size="100px" style="margin-left:45%; margin-top: 45vh;"></Chase>
+}
+else
+{
+
+    @if (logger.checkAccess("/ditchpatchPayroll", rollId))
+    {
+        <div class="container-fluid">
+            <div class="row">
+
+                <div class="col-7">
+
+                    <Animate Animation="Animations.ZoomIn" Duration="TimeSpan.FromSeconds(0.5)" Delay="TimeSpan.FromSeconds(0)">
+                        <div class="input-group p-1 shadow">
+                   
+
+                            <span class="input-group-text">Start Date</span>
+                            <input type="date" class="form-control" @bind="Start_date">
+                            <span class="input-group-text">End Date</span>
+                            <input type="date" class="form-control" @bind="end_date">
+
+
+                            <btn class="btn btn-primary" @onclick="()=>StateHasChanged ()"> Show </btn>
+
+
+
+
+
+                            @if (isSavingDitchpatch)
+                            {
+
+                                <button class="btn btn-dark"> <Flow Size="20px" Color="#FFFFFF"></Flow> </button>
+
+                            }
+                            else
+                            {
+
+                                <button class="btn btn-dark" @onclick="ditchpatch"> <span class="oi oi-print" aria-hidden="true"></span> Dispatch </button>
+                            }
+
+
+
+                            <button class="btn btn-dark" @onclick="@(()=>{
+
+                           // dpl.add_employee(dispatchList);
+
+                            nav.NavigateTo("/SalarayReport");
+
+                          })">
+                                <span class="oi oi-document" aria-hidden="true"></span> Report
+                            </button>
+
+
+
+
+
+                            <input class="form-control" type="text" @oninput="@((ChangeEventArgs __e) =>searchEmployee( __e?.Value?.ToString()) )" placeholder="Search Employees" />
+
+                            <button class="btn btn-dark" @onclick="()=>dispatchList = employeeList.ToList()"> <span class="oi oi-list-rich" aria-hidden="true"></span> Select All </button>
+
+                            <button class="btn btn-dark" @onclick="()=>dispatchList = new List<Employee>()"> <span class="oi oi-circle-x" aria-hidden="true"></span> Select None </button>
+
+                        </div>
+
+
+                    </Animate>
+
+                </div>
+
+
+
+
+            </div>
+            <div class="row">
+
+
+
+                <div class="row" style="padding:10px; margin-top:10px">
+                    <div class="col-3" style="overflow-y:auto; height:80vh">
+                        <Animate Animation="Animations.SlideUp" Duration="TimeSpan.FromSeconds(1)" Delay="TimeSpan.FromSeconds(0)">
+                            <table class="table table-secondary table-responsive table-striped table-sm">
+                                <thead class="sticky-top">
+                                    <tr class="table-primary sticky-table-header">
+
+
+
+                                        <th @onclick="()=>{employeeListSearched= employeeList.OrderBy(x=>x.FirstName).ToList();}">
+                                            Name
+                                        </th>
+                                        <th @onclick="()=>{employeeListSearched= employeeList.OrderBy(x=>x.IcPp).ToList();}">
+                                            IC/PP
+                                        </th>
+                                        <th @onclick="()=>{employeeListSearched= employeeList.OrderBy(x=>x.EmployeeCode).ToList();}">
+                                            Code
+                                        </th>
+
+
+
+                                        <th style="text-align:right">
+                                            Total Amount
+                                        </th>
+
+                                        <th style="text-align:center">
+
+                                        </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var e in employeeListSearched)
+                                    {
+                                        <tr>
+
+
+
+
+
+                                            <td>
+                                                @e.FirstName&nbsp;@e.LastName
+                                            </td>
+                                            <td>
+                                                @e.IcPp
+                                            </td>
+                                            <td>
+                                                @e.EmployeeCode
+                                            </td>
+
+
+
+                                            <td style="text-align:right">
+                                                @String.Format("{0:0.##}", CalculateTotalSalary(e)[0])
+                                            </td>
+
+                                            <td style="text-align:center">
+
+
+                                                <button class="btn btn-primary" @onclick="@(()=>{
+
+                                                if( dispatchList.FirstOrDefault(x=>x.Id == e.Id) ==null){
+                                                    dispatchList.Add(e);
+                                                }else{
+                                                    var parameters = new ModalParameters().Add(nameof(OkModal.Message), "Employee Already in the list");
+
+                                                    var modal = Modal.Show<OkModal>("Confimation", parameters);
+                                                }
+
+                                                })">
+                                                    <span class="oi oi-plus" aria-hidden="true"></span>
+                                                </button>
+
+
+                                            </td>
+
+
+                                        </tr>
+                                    }
+
+                                </tbody>
+                            </table>
+                        </Animate>
+
+
+                    </div>
+
+                    <div class="col-9" style="overflow-y:auto; height:80vh">
+                        <Animate Animation="Animations.SlideUp" Duration="TimeSpan.FromSeconds(1)" Delay="TimeSpan.FromSeconds(0)">
+                            <table class="table table-secondary table-responsive table-bordered table-sm">
+                                <thead class="sticky-top">
+                                    <tr class="table-primary sticky-table-header">
+
+
+
+                                        <th @onclick="()=>{employeeListSearched= employeeList.OrderBy(x=>x.FirstName).ToList();}">
+                                            Name
+                                        </th>
+                                        <th @onclick="()=>{employeeListSearched= employeeList.OrderBy(x=>x.IcPp).ToList();}">
+                                            IC/PP
+                                        </th>
+                                        <th>
+                                            Code
+                                        </th>
+
+
+                                        <th style="text-align:right">
+                                            Total Amount
+                                        </th>
+                                        <th style="text-align:right">
+                                            Company Cost
+                                        </th>
+
+                                        <th>
+                                            Actual Amount <br> (Manual Input)
+                                        </th>
+
+                                        <th style="background-color:darkred">
+                                            Current Balance
+                                        </th>
+
+
+
+                                        <th style="background-color:darkred">
+                                            Toal advance taken
+                                        </th>
+                                        <th style="background-color:darkseagreen">
+                                            Advance Payed Back
+                                        </th>
+                                        <th style="background-color:darkblue">
+                                            Advance Balance
+                                        </th>
+
+                                        <th class="table-success">
+                                            Actual Dispatch (To be)
+                                        </th>
+
+
+
+                                        <th style="text-align:center">
+
+                                        </th>
+
+
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var e in dispatchList)
+                                    {
+                                        <tr>
+
+                                            <td>
+                                                @e.FirstName&nbsp;@e.LastName
+                                            </td>
+                                            <td>
+                                                @e.IcPp
+                                            </td>
+                                            <td>
+                                                @e.EmployeeCode
+                                            </td>
+
+                                            <td style="text-align:right">
+                                                @String.Format("{0:0.##}", CalculateTotalSalary(e)[0])
+
+                                            </td>
+                                            <td style="text-align:right">
+                                                @String.Format("{0:0.##}", CalculateTotalSalary(e)[1])
+
+                                            </td>
+
+
+
+                                            <td>
+                                                @if (calculateTotalPayable(total: CalculateTotalSalary(e)[0], Balance: calcluateBlance(e), totalAdvanceTaken: totalAdvancedByEmployees.FirstOrDefault(x => x.EmployeeId == e.Id)?.Sum, totalAdvancePaid: TotalAdvancedPaybackByEmployees.FirstOrDefault(x => x.EmployeeId == e.Id)?.Sum) == 0)
+                                                {
+                                                    <input class="form-control" placeholder="Actual Amount" @bind="depatches.FirstOrDefault(x=>x.EmplyeeId==e.Id).ActualAmount" disabled>
+                                                }
+                                                else
+                                                {
+                                                    <input class="form-control" placeholder="Actual Amount" @bind="depatches.FirstOrDefault(x=>x.EmplyeeId==e.Id).ActualAmount">
+                                                }
+
+
+
+
+                                            </td>
+
+                                            <td>
+
+                                                @String.Format("{0:0.##}", calcluateBlance(e))
+
+                                            </td>
+
+
+
+
+                                            <td>
+
+
+                                                @totalAdvancedByEmployees.FirstOrDefault(x=>x.EmployeeId == e.Id)?.Sum
+
+
+                                            </td>
+                                            <td>
+
+                                                @TotalAdvancedPaybackByEmployees.FirstOrDefault(x=>x.EmployeeId == e.Id)?.Sum
+
+
+
+                                            </td>
+                                            <td>
+                                                @if (TotalAdvancedPaybackByEmployees.FirstOrDefault(x => x.EmployeeId == e.Id) == null)
+                                                {
+                                                    @totalAdvancedByEmployees.FirstOrDefault(x=>x.EmployeeId == e.Id)?.Sum
+                                                }
+                                                else
+                                                {
+                                                    @(totalAdvancedByEmployees.FirstOrDefault(x => x.EmployeeId == e.Id)?.Sum - TotalAdvancedPaybackByEmployees.FirstOrDefault(x => x.EmployeeId == e.Id)?.Sum)
+                                                }
+
+
+                                            </td>
+
+                                            <td>
+
+                                                @String.Format("{0:0.##}", calculateTotalPayable(total:CalculateTotalSalary(e)[0],Balance:calcluateBlance(e),totalAdvanceTaken:totalAdvancedByEmployees.FirstOrDefault(x=>x.EmployeeId == e.Id)?.Sum,totalAdvancePaid:TotalAdvancedPaybackByEmployees.FirstOrDefault(x=>x.EmployeeId == e.Id)?.Sum))
+
+
+
+
+                                            </td>
+
+
+                                            <td style="text-align:center">
+
+
+                                                <button class="btn btn-danger" @onclick="()=> dispatchList.Remove(e)"> <span class="oi oi-delete" aria-hidden="true"></span></button>
+
+
+                                            </td>
+
+
+                                        </tr>
+                                    }
+
+                                </tbody>
+                            </table>
+                        </Animate>
+
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+
+
+
+
+
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+
+
+}
+
+
+@code {
+
+    bool loading = false;
+    bool isShowingLoading = false;
+    bool showing = false;
+    bool isSavingDitchpatch = false;
+    bool featchingData = false;
+
+    bool refreshing = false;
+
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+
+    List<Employee> employeeList = new List<Employee>();
+    List<Employee> employeeListSearched = new List<Employee>();
+    public static List<Employee> dispatchList = new List<Employee>();
+
+    List<Depatch> depatches = new List<Depatch>();
+    List<Depatch> depatchesDB = new List<Depatch>();
+
+    List<Roll> rolls = new List<Roll>();
+    List<ViewAdvancedByEmployee> totalAdvancedByEmployees = new List<ViewAdvancedByEmployee>();
+    List<ViewAdvancedPaybackByEmployee> TotalAdvancedPaybackByEmployees = new List<ViewAdvancedPaybackByEmployee>();
+
+
+    Employee? SelectedEmployee;
+
+    //DateOnly selectedMonth = DateOnly.FromDateTime(DateTime.Now);
+
+
+
+    DateOnly Start_date = DateOnly.FromDateTime(DateTime.Now.AddMonths(-1));
+    DateOnly end_date = DateOnly.FromDateTime(DateTime.Now);
+
+
+
+    DateTime monthYear = DateTime.Now;
+
+    bool isList = true;
+
+    List<Payroll> payrolls = new List<Payroll>();
+    List<Deduction> deductions = new List<Deduction>();
+
+    List<PayrollByMonthStuff> payrollByMonthStuffs = new List<PayrollByMonthStuff>();
+    [CascadingParameter] Blazored.Modal.Services.IModalService Modal { get; set; } = default!;
+
+    List<WorkerWorkingHour>? workerWorkingHours;
+    List<Extradeduction>? extradeductions;
+    List<ExtraEarn>? extraEarns;
+    List<Payrolldeductionschema>? schemas;
+    List<Epclocal>? EpFlocals;
+    List<EpfForeign>? EpfForeigns;
+    List<Sosco>? soscos;
+    List<WorkerHourlyRate>? workerHourlyRates;
+  
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+
+        rollId = await localStorage.GetItemAsync<string>("Roll");
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            rolls = await dbcontext.Rolls.ToListAsync();
+
+            payrolls = await dbcontext.Payrolls.ToListAsync();
+
+            deductions = await dbcontext.Deductions.ToListAsync();
+
+
+            employeeList = await dbcontext.Employees.Where(x => x.Level == "Worker" && x.Active == true).OrderByDescending(x => x.Active).ThenBy(x => x.FirstName).ToListAsync();
+
+            employeeListSearched = employeeList;
+
+            dispatchList = employeeList.ToList();
+
+            payrollByMonthStuffs = await dbcontext.PayrollByMonthStuffs.ToListAsync();
+
+
+
+            var firstDayOfMonth = Start_date;
+            var lastDayOfMonth = end_date;
+
+            workerWorkingHours = await dbcontext.WorkerWorkingHours.ToListAsync();
+            extradeductions = await dbcontext.Extradeductions.ToListAsync();
+            extraEarns = await dbcontext.ExtraEarns.ToListAsync();
+
+            schemas = await dbcontext.Payrolldeductionschemas.Where(x => x.SinceDate <= Start_date && (x.EndDate >= end_date || x.EndDate == null)).ToListAsync();
+
+           // totalAdvancedByEmployees = await dbcontext.ViewAdvancedByEmployees.ToListAsync();
+
+          //  TotalAdvancedPaybackByEmployees = await dbcontext.ViewAdvancedPaybackByEmployees.ToListAsync();
+
+            EpFlocals = await dbcontext.Epclocals.ToListAsync();
+            EpfForeigns = await dbcontext.EpfForeigns.ToListAsync();
+            soscos = await dbcontext.Soscos.ToListAsync();
+
+            workerHourlyRates = await dbcontext.WorkerHourlyRates.ToListAsync();
+
+            depatchesDB = await dbcontext.Depatches.ToListAsync();
+
+            foreach (Employee e in employeeList)
+            {
+                Depatch d = new Depatch()
+                    {
+                        EmplyeeId = e.Id
+                    };
+
+                depatches.Add(d);
+            }
+
+        }
+
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    void searchEmployee(string? text)
+    {
+        //  Console.WriteLine(text);
+
+
+        if (text != null)
+        {
+
+
+            employeeListSearched = employeeList.Where(x =>
+
+            (x.FirstName != null &&
+            x.LastName != null &&
+            x.EmployeeCode != null &&
+            x.IcPp != null) &&
+
+
+            (x.FirstName.ToLower().Contains(text.ToLower()) ||
+            x.LastName.ToLower().Contains(text.ToLower()) ||
+
+            x.IcPp.ToLower().Contains(text.ToLower()) ||
+
+            x.EmployeeCode.ToLower().Contains(text.ToLower()))
+
+            ).ToList();
+
+            StateHasChanged();
+
+        }
+
+
+    }
+
+    async Task ditchpatch()
+    {
+        isSavingDitchpatch = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+
+
+
+            var firstDayOfMonth = Start_date;
+            var lastDayOfMonth = end_date;
+
+
+
+
+
+            List<WorkerWorkingHour>? workerWorkingHours = this.workerWorkingHours?.Where(x => x.Date >= firstDayOfMonth && x.Date <= lastDayOfMonth).ToList();
+
+
+            List<Extradeduction>? extradeductions = this.extradeductions?.Where(x => x.Date == firstDayOfMonth && x.Date == lastDayOfMonth).ToList();
+
+            List<ExtraEarn>? extraEarns = this.extraEarns?.Where(x => x.Date == firstDayOfMonth && x.Date == lastDayOfMonth).ToList();
+
+
+
+
+
+            if (schemas != null)
+            {
+                payrolls = this.payrolls.Where(x => schemas.Any(y => y.Id == x.SchemaId)).OrderBy(x => x.Type).ToList();
+                deductions = this.deductions.Where(x => schemas.Any(y => y.Id == x.SchemaId)).OrderBy(x => x.Type).ToList();
+            }
+            else
+            {
+                payrolls = null;
+                deductions = null;
+
+            }
+
+            List<Epclocal>? EpFlocals = this.EpFlocals.ToList();
+            List<EpfForeign>? EpfForeigns = this.EpfForeigns.ToList();
+            List<Sosco> soscos = this.soscos.ToList();
+
+            foreach (Employee e in dispatchList)
+            {
+
+                double total = 0;
+                double companyCost = 0;
+
+                Depatch d = new Depatch
+                    {
+                        Id = Guid.NewGuid(),
+                        EmplyeeId = e.Id,
+                        Month = Start_date,
+                    };
+
+
+                //Worker salary....................................................................................................................................
+                if (e.Level == "Worker")
+                {
+                    List<HourRate> hourRates = new List<HourRate>();
+
+
+                    double salaryondate = 0.0;
+
+                    var workerHourlyRates = await dbcontext.WorkerHourlyRates.ToListAsync();
+
+                    var rates = workerHourlyRates.Where(x => x.EmployeeId == e.Id).OrderBy(x => x.SinceDate);
+
+
+
+
+
+
+
+
+
+                    double salamonth = 0.00;
+
+                    for (DateTime iDate = firstDayOfMonth.ToDateTime(new TimeOnly()); iDate <= lastDayOfMonth.ToDateTime(new TimeOnly()); iDate = iDate.AddDays(1))
+                    {
+
+                        var CurrentRate = rates.FirstOrDefault(x => x.SinceDate <= iDate && (x.Lastdate >= iDate || x.Lastdate == null));
+
+
+
+
+
+                        if (CurrentRate != null)
+                        {
+
+                            var WorkingHourToday = workerWorkingHours.FirstOrDefault(x => x.Date == DateOnly.FromDateTime(iDate));
+
+                            TimeSpan? totalHours = new TimeSpan(0, 0, 0, 0);
+
+                            if (WorkingHourToday != null && WorkingHourToday.WorkingHoursRevised != null)
+                            {
+                                totalHours = totalHours.Value + WorkingHourToday.WorkingHoursRevised.Value;
+                            }
+                            else if (WorkingHourToday != null && WorkingHourToday.WokingHours != null)
+                            {
+                                totalHours = totalHours.Value + WorkingHourToday.WokingHours.Value;
+                            }
+
+
+                            if (WorkingHourToday != null && WorkingHourToday.ExtraHour != null)
+                            {
+                                totalHours = totalHours.Value + WorkingHourToday.ExtraHour.Value;
+                            }
+
+
+
+                            double perminrate = CurrentRate.Rate.Value / 60;
+
+                            var Totalmins = totalHours.Value.TotalMinutes;
+
+                            salaryondate = Totalmins * perminrate;
+
+                            salamonth = salamonth + salaryondate;
+
+
+                            var h = hourRates.FirstOrDefault(x => x.Rate == CurrentRate.Rate.Value);
+
+
+                            ;
+
+
+
+                            if (h == null)
+                            {
+                                HourRate hr = new HourRate
+                                    {
+                                        Rate = CurrentRate.Rate.Value,
+                                        Hours = totalHours,
+                                        Total = salaryondate
+                                    };
+                                hourRates.Add(hr);
+                            }
+                            else
+                            {
+
+                                h.Hours = h.Hours + totalHours;
+                                h.Total = h.Total + salaryondate;
+
+                            }
+
+                        }
+
+
+
+
+                    }
+                    // ................................... houley incomes.................................
+                    foreach (HourRate h in hourRates.Distinct())
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"{h.Rate}RM x {h.Hours}Hours",
+                                Amount = h.Total,
+                                DitchpathId = d.Id,
+                                Isearning = true
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+
+                        total = total + h.Total;
+                    }
+                    // ................................... Allowances.................................
+                    var additions = extraEarns.FirstOrDefault(x => x.EmployeeId == e.Id);
+
+                    if (additions != null && additions.FoodAllowance != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"Food Allowance",
+                                Amount = additions.FoodAllowance,
+                                DitchpathId = d.Id,
+                                Isearning = true
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total + additions.FoodAllowance.Value;
+                    }
+
+                    if (additions != null && additions.MobileAllowance != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"Mobile Allowance",
+                                Amount = additions.MobileAllowance,
+                                DitchpathId = d.Id,
+                                Isearning = true
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total + additions.MobileAllowance.Value;
+                    }
+
+                    if (additions != null && additions.HouseAllowance != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"House Allowance",
+                                Amount = additions.HouseAllowance,
+                                DitchpathId = d.Id,
+                                Isearning = true
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total + additions.HouseAllowance.Value;
+
+
+                    }
+
+                    if (additions != null && additions.NightWorkAllowance != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"Night Work Allowance",
+                                Amount = additions.NightWorkAllowance,
+                                DitchpathId = d.Id,
+                                Isearning = true
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total + additions.NightWorkAllowance.Value;
+                    }
+
+                    if (additions != null && additions.OtherAllowance != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"Other Allowance",
+                                Amount = additions.OtherAllowance,
+                                DitchpathId = d.Id,
+                                Isearning = true
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total + additions.OtherAllowance.Value;
+                    }
+                    // ................................... Deductions.................................
+                    var deduct = extradeductions.FirstOrDefault(x => x.EmployeeId == e.Id);
+
+                    if (deduct != null && deduct.Levy != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"Levy",
+                                Amount = deduct.Levy,
+                                DitchpathId = d.Id,
+                                Isearning = false
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total - deduct.Levy.Value;
+                    }
+
+                    if (deduct != null && deduct.ProbashDeposit != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"Probash Deposit",
+                                Amount = deduct.ProbashDeposit,
+                                DitchpathId = d.Id,
+                                Isearning = false
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total - deduct.ProbashDeposit.Value;
+                    }
+
+                    if (deduct != null && deduct.ProbashLoan != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"Probash Loan",
+                                Amount = deduct.ProbashLoan,
+                                DitchpathId = d.Id,
+                                Isearning = false
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total - deduct.ProbashLoan.Value;
+
+                    }
+
+                    if (deduct != null && deduct.OfficeAdvance != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"Office Advance",
+                                Amount = deduct.OfficeAdvance,
+                                DitchpathId = d.Id,
+                                Isearning = false
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total - deduct.OfficeAdvance.Value;
+                    }
+
+                    if (deduct != null && deduct.SiteAdvance != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"Site Advance",
+                                Amount = deduct.SiteAdvance,
+                                DitchpathId = d.Id,
+                                Isearning = false
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total - deduct.SiteAdvance.Value;
+                    }
+
+                    if (deduct != null && deduct.PreviousLoan != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"Previous Loan",
+                                Amount = deduct.PreviousLoan,
+                                DitchpathId = d.Id,
+                                Isearning = false
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total - deduct.PreviousLoan.Value;
+                    }
+
+
+                    if (deduct != null && deduct.Ppe != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"PPE",
+                                Amount = deduct.Ppe,
+                                DitchpathId = d.Id,
+                                Isearning = false
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total - deduct.Ppe.Value;
+                    }
+
+                    if (deduct != null && deduct.Others != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"Others",
+                                Amount = deduct.Others,
+                                DitchpathId = d.Id,
+                                Isearning = false
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total - deduct.Others.Value;
+                    }
+                    if (deduct != null && deduct.Penalty != null)
+                    {
+                        DistchpatchField distchpatchField = new DistchpatchField
+                            {
+
+                                Id = Guid.NewGuid(),
+                                Name = $"Penalty",
+                                Amount = deduct.Penalty,
+                                DitchpathId = d.Id,
+                                Isearning = false
+
+                            };
+
+                        dbcontext.DistchpatchFields.Add(distchpatchField);
+                        total = total - deduct.Penalty.Value;
+                    }
+
+
+                    companyCost = total;
+
+                    if (deduct != null && deduct.Epf == true)
+                    {
+                        if (e.Nationality == "Malaysia")
+                        {
+
+                            var epf = EpFlocals.FirstOrDefault(x => salamonth >= x.From && salamonth <= x.To);
+                            if (epf != null)
+                            {
+                                DistchpatchField distchpatchField = new DistchpatchField
+                                    {
+
+                                        Id = Guid.NewGuid(),
+                                        Name = $"EPF Local",
+                                        Amount = epf.ByTheEmployee.Value,
+                                        DitchpathId = d.Id,
+                                        Isearning = false
+
+                                    };
+
+                                dbcontext.DistchpatchFields.Add(distchpatchField);
+
+                                companyCost = companyCost + epf.ByTheEnployeer.Value;
+
+                                total = total - epf.ByTheEmployee.Value;
+
+                            }
+
+                        }
+                        else
+                        {
+                            var epf = EpfForeigns.FirstOrDefault(x => salamonth >= x.From && salamonth <= x.To);
+                            if (epf != null)
+                            {
+                                DistchpatchField distchpatchField = new DistchpatchField
+                                    {
+
+                                        Id = Guid.NewGuid(),
+                                        Name = $"EPF Foraign",
+                                        Amount = epf.ByTheEmployee.Value,
+                                        DitchpathId = d.Id,
+                                        Isearning = false
+
+                                    };
+
+                                dbcontext.DistchpatchFields.Add(distchpatchField);
+
+                                companyCost = companyCost + epf.ByTheEnployeer.Value;
+
+                                total = total - epf.ByTheEmployee.Value;
+
+
+
+                            }
+                        }
+                    }
+
+                    var sosco = soscos.FirstOrDefault(x => salamonth >= x.From && salamonth < x.To);
+
+                    if (deduct != null && deduct.Sosco == true)
+                    {
+                        if (sosco != null)
+                        {
+                            DistchpatchField distchpatchField = new DistchpatchField
+                                {
+
+                                    Id = Guid.NewGuid(),
+                                    Name = $"SOSCO",
+                                    Amount = sosco.EmployeeContribution.Value,
+                                    DitchpathId = d.Id,
+                                    Isearning = false
+
+                                };
+
+                            dbcontext.DistchpatchFields.Add(distchpatchField);
+                            total = total - sosco.EmployeeContribution.Value;
+
+                            companyCost = companyCost + sosco.EmployersContribution.Value; ;
+
+                        }
+                    }
+
+
+                }
+
+                d.TotalAmount = total;
+
+                d.CompanyCost = companyCost;
+
+
+
+                if (depatches.FirstOrDefault(x => x.EmplyeeId == e.Id)?.ActualAmount != null)
+                {
+                    d.ActualAmount = depatches.FirstOrDefault(x => x.EmplyeeId == e.Id)?.ActualAmount;
+                }
+                else
+                {
+                    d.ActualAmount = total;
+                }
+
+
+                var payabletotal = calculateTotalPayable(total: CalculateTotalSalary(e)[0], Balance: calcluateBlance(e), totalAdvanceTaken: totalAdvancedByEmployees.FirstOrDefault(x => x.EmployeeId == e.Id)?.Sum, totalAdvancePaid: TotalAdvancedPaybackByEmployees.FirstOrDefault(x => x.EmployeeId == e.Id)?.Sum);
+
+
+
+                var totalAdvancePaid = TotalAdvancedPaybackByEmployees.FirstOrDefault(x => x.EmployeeId == e.Id)?.Sum;
+                var totalAdvanceTaken = totalAdvancedByEmployees.FirstOrDefault(x => x.EmployeeId == e.Id)?.Sum;
+
+                if (totalAdvanceTaken - totalAdvancePaid >= d.TotalAmount)
+                {
+                    d.ActualAmount = 0.00;
+                    d.RemainingAmount = 0.00;
+                }
+                else
+                {
+
+                    d.RemainingAmount = payabletotal - d.ActualAmount;
+
+
+                }
+
+
+
+                d.RemainingAmount = total - d.ActualAmount;
+
+
+
+                AdvancePayback advancePayback = new AdvancePayback()
+                    {
+                        Id = Guid.NewGuid(),
+                        EmployeeId = e.Id,
+                        Date = DateOnly.FromDateTime(DateTime.Today)
+
+                    };
+
+
+
+
+
+
+
+                dbcontext.Depatches.Add(d);
+
+
+            }
+
+
+
+            await dbcontext.SaveChangesAsync();
+
+
+        }
+
+
+        isSavingDitchpatch = false;
+        await InvokeAsync(StateHasChanged);
+
+        var parameters = new ModalParameters().Add(nameof(ToReportModal.Message), "Dispatch Salary Task Completed");
+
+        parameters.Add(nameof(ToReportModal.Navlink), $"/SalarayReport/{Start_date.ToString("yyyy-MM-dd")}");
+
+        var modal = Modal.Show<ToReportModal>("Confimation", parameters);
+
+    }
+
+    double? calcluateBlance(Employee e)
+    {
+
+        return depatchesDB.Where(x => x.EmplyeeId == e.Id).Select(x => x.TotalAmount).Sum() - depatchesDB.Where(x => x.EmplyeeId == e.Id).Select(x => x.ActualAmount).Sum();
+
+    }
+
+
+    
+
+
+
+
+    async void print()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+
+
+
+        nav.NavigateTo($"/print");
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+
+
+
+    double? CalculateTotalEarning(Employee e)
+    {
+        double? total = payrolls.Where(x => x.EmployeeId == e.Id).Select(x => x.Amount).Sum(); //.ToString("F", CultureInfo.InvariantCulture);
+
+        foreach (var pm in payrollByMonthStuffs.Where(x => x.EmployeeId == e.Id && x.Earning == true))
+        {
+            total = total + pm.Amount;
+        }
+
+        return total;
+    }
+
+    double? CalculateTotalDeductions(Employee e)
+    {
+        double? total = deductions.Where(x => x.Employeeid == e.Id).Select(x => x.Amount).Sum();//?.ToString("F", CultureInfo.InvariantCulture)
+
+        foreach (var pm in payrollByMonthStuffs.Where(x => x.EmployeeId == e.Id && x.Earning != true))
+        {
+            total = total - pm.Amount;
+        }
+
+        return total;
+    }
+
+
+
+
+    //..total payable calculation.....................................................................................................................................
+
+
+
+    double? calculateTotalPayable(double? total, double? Balance, double? totalAdvanceTaken, double? totalAdvancePaid)
+    {
+        double? advanceBalance = 0.00;
+
+        if (totalAdvancePaid != null && totalAdvanceTaken != null)
+        {
+            advanceBalance = totalAdvanceTaken - totalAdvancePaid;
+        }
+        else if (totalAdvancePaid == null && totalAdvanceTaken != null)
+        {
+            advanceBalance = totalAdvanceTaken;
+        }
+
+        if (total + Balance - advanceBalance < 0)
+        {
+            return 0;
+        }
+
+        return total + Balance - advanceBalance;
+
+    }
+
+
+
+
+
+
+    List<double> CalculateTotalSalary(Employee e)
+    {
+
+
+        List<double> totals = new List<double>();
+
+        double companyCost = 0;
+
+        double total = 0;
+
+
+        var firstDayOfMonth = Start_date;
+        var lastDayOfMonth = end_date;
+
+
+
+
+
+        List<WorkerWorkingHour>? workerWorkingHours = this.workerWorkingHours?.Where(x => x.Date >= firstDayOfMonth && x.Date <= lastDayOfMonth).ToList();
+
+
+        List<Extradeduction>? extradeductions = this.extradeductions?.Where(x => x.Date == firstDayOfMonth && x.Date == lastDayOfMonth).ToList();
+
+        List<ExtraEarn>? extraEarns = this.extraEarns?.Where(x => x.Date == firstDayOfMonth && x.Date == lastDayOfMonth).ToList();
+
+
+
+
+
+        if (schemas != null)
+        {
+            payrolls = this.payrolls.Where(x => schemas.Any(y => y.Id == x.SchemaId)).OrderBy(x => x.Type).ToList();
+            deductions = this.deductions.Where(x => schemas.Any(y => y.Id == x.SchemaId)).OrderBy(x => x.Type).ToList();
+        }
+        else
+        {
+            payrolls = null;
+            deductions = null;
+
+        }
+
+        List<Epclocal>? EpFlocals = this.EpFlocals.ToList();
+        List<EpfForeign>? EpfForeigns = this.EpfForeigns.ToList();
+        List<Sosco> soscos = this.soscos.ToList();
+
+
+
+
+
+        //stuff salary....................................................................................................................................
+
+        //Worker salary....................................................................................................................................
+        if (e.Level == "Worker")
+        {
+            List<HourRate> hourRates = new List<HourRate>();
+
+
+            double salaryondate = 0.0;
+
+            List<WorkerHourlyRate>? workerHourlyRates = this.workerHourlyRates.ToList();
+
+            var rates = workerHourlyRates.Where(x => x.EmployeeId == e.Id).OrderBy(x => x.SinceDate);
+
+
+
+
+
+
+
+
+
+            double salamonth = 0.00;
+
+            for (DateTime iDate = firstDayOfMonth.ToDateTime(new TimeOnly()); iDate <= lastDayOfMonth.ToDateTime(new TimeOnly()); iDate = iDate.AddDays(1))
+            {
+
+                var CurrentRate = rates.FirstOrDefault(x => x.SinceDate <= iDate && (x.Lastdate >= iDate || x.Lastdate == null));
+
+
+
+
+
+                if (CurrentRate != null)
+                {
+
+                    var WorkingHourToday = workerWorkingHours.FirstOrDefault(x => x.Date == DateOnly.FromDateTime(iDate));
+
+                    TimeSpan? totalHours = new TimeSpan(0, 0, 0, 0);
+
+                    if (WorkingHourToday != null && WorkingHourToday.WorkingHoursRevised != null)
+                    {
+                        totalHours = totalHours.Value + WorkingHourToday.WorkingHoursRevised.Value;
+                    }
+                    else if (WorkingHourToday != null && WorkingHourToday.WokingHours != null)
+                    {
+                        totalHours = totalHours.Value + WorkingHourToday.WokingHours.Value;
+                    }
+
+
+                    if (WorkingHourToday != null && WorkingHourToday.ExtraHour != null)
+                    {
+                        totalHours = totalHours.Value + WorkingHourToday.ExtraHour.Value;
+                    }
+
+
+
+                    double perminrate = CurrentRate.Rate.Value / 60;
+
+                    var Totalmins = totalHours.Value.TotalMinutes;
+
+                    salaryondate = Totalmins * perminrate;
+
+                    salamonth = salamonth + salaryondate;
+
+
+                    var h = hourRates.FirstOrDefault(x => x.Rate == CurrentRate.Rate.Value);
+
+
+                    ;
+
+
+
+                    if (h == null)
+                    {
+                        HourRate hr = new HourRate
+                            {
+                                Rate = CurrentRate.Rate.Value,
+                                Hours = totalHours,
+                                Total = salaryondate
+                            };
+                        hourRates.Add(hr);
+                    }
+                    else
+                    {
+
+                        h.Hours = h.Hours + totalHours;
+                        h.Total = h.Total + salaryondate;
+
+                    }
+
+                }
+
+
+
+
+            }
+            // ................................... houley incomes.................................
+            foreach (HourRate h in hourRates.Distinct())
+            {
+
+                total = total + h.Total;
+
+
+            }
+
+
+            // ................................... Allowances.................................
+            var additions = extraEarns.FirstOrDefault(x => x.EmployeeId == e.Id);
+
+            if (additions != null && additions.FoodAllowance != null)
+            {
+
+                total = total + additions.FoodAllowance.Value;
+
+
+            }
+
+            if (additions != null && additions.MobileAllowance != null)
+            {
+                total = total + additions.MobileAllowance.Value;
+            }
+
+            if (additions != null && additions.HouseAllowance != null)
+            {
+
+                total = total + additions.HouseAllowance.Value;
+
+            }
+
+            if (additions != null && additions.NightWorkAllowance != null)
+            {
+                total = total + additions.NightWorkAllowance.Value;
+            }
+
+            if (additions != null && additions.OtherAllowance != null)
+            {
+                total = total + additions.OtherAllowance.Value;
+            }
+            // ................................... Deductions.................................
+            var deduct = extradeductions.FirstOrDefault(x => x.EmployeeId == e.Id);
+
+            if (deduct != null && deduct.Levy != null)
+            {
+                total = total - deduct.Levy.Value;
+            }
+
+            if (deduct != null && deduct.ProbashDeposit != null)
+            {
+                total = total - deduct.ProbashDeposit.Value;
+            }
+
+            if (deduct != null && deduct.ProbashLoan != null)
+            {
+                total = total - deduct.ProbashLoan.Value;
+            }
+
+            if (deduct != null && deduct.OfficeAdvance != null)
+            {
+                total = total - deduct.OfficeAdvance.Value;
+            }
+
+            if (deduct != null && deduct.SiteAdvance != null)
+            {
+                total = total - deduct.SiteAdvance.Value;
+            }
+
+            if (deduct != null && deduct.PreviousLoan != null)
+            {
+                total = total - deduct.PreviousLoan.Value;
+            }
+
+
+            if (deduct != null && deduct.Ppe != null)
+            {
+                total = total - deduct.Ppe.Value;
+            }
+
+            if (deduct != null && deduct.Others != null)
+            {
+                total = total - deduct.Others.Value;
+            }
+            if (deduct != null && deduct.Penalty != null)
+            {
+                total = total - deduct.Penalty.Value;
+            }
+
+            companyCost = total;
+
+
+            if (deduct != null && deduct.Epf == true)
+            {
+                if (e.Nationality == "Malaysia")
+                {
+
+                    var epf = EpFlocals.FirstOrDefault(x => salamonth >= x.From && salamonth <= x.To);
+                    if (epf != null)
+                    {
+                        companyCost = companyCost + epf.ByTheEnployeer.Value;
+
+
+
+                        total = total - epf.ByTheEmployee.Value;
+
+                    }
+
+                }
+                else
+                {
+                    var epf = EpfForeigns.FirstOrDefault(x => salamonth >= x.From && salamonth <= x.To);
+                    if (epf != null)
+                    {
+
+                        companyCost = companyCost + epf.ByTheEnployeer.Value;
+
+
+                        total = total - epf.ByTheEmployee.Value;
+                    }
+                }
+            }
+
+            var sosco = soscos.FirstOrDefault(x => salamonth >= x.From && salamonth < x.To);
+
+            if (deduct != null && deduct.Sosco == true)
+            {
+                if (sosco != null)
+                {
+                    total = total - sosco.EmployeeContribution.Value;
+
+                    companyCost = companyCost + sosco.EmployersContribution.Value;
+
+                }
+            }
+
+
+        }
+
+
+
+
+
+        totals.Add(total);
+        totals.Add(companyCost);
+
+        return totals;
+    }
+
+    protected double? calculateaPAmount(double? mainAmount, double? percentage)
+    {
+        return (percentage / 100) * mainAmount;
+    }
+
+
+
+
+    void IDisposable.Dispose()
+    {
+
+    }
+}

@@ -1,0 +1,231 @@
+﻿@page "/access/{adminId}"
+
+@if (isloading)
+{
+    <Chase></Chase>
+}
+else
+{
+
+    <div class="container-fluid">
+
+        <h3>@roll?.Name</h3>
+
+        <div class="row">
+            <div class="col-2">
+                <h5>All Pages</h5>
+                <table class="table table-secondary table-sm">
+                    <thead>
+                        <tr>
+                            <th>Page Name</th>
+                            <th>
+
+                            </th>
+                        </tr>
+
+                    </thead>
+                    <tbody>
+                        @foreach (var p in pages)
+                        {
+                            <tr>
+
+                                <td>
+                                    @p.PageName
+                                </td>
+                                <th>
+                                    @if (issaving && savinid == p.Id)
+                                    {
+                                        <Chase></Chase>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-primary" @onclick="async()=> { savinid = p.Id;await add(p); }">Add</button>
+                                    }
+
+
+
+                                </th>
+                            </tr>
+
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="col-2">
+                <h5>Aceess List</h5>
+                <table class="table table-secondary table-sm">
+                    <thead>
+                        <tr>
+                            <th>Page Name</th>
+                            <th>
+
+                            </th>
+                        </tr>
+
+                    </thead>
+                    <tbody>
+                        @foreach (DataModels.Access a in accesses.Where(x => x.RollId == roll.Id))
+                        {
+                            <tr>
+
+                                <td>
+                                    @pages.FirstOrDefault(x=>x.Id == a.PageId)?.PageName
+                                </td>
+                                <th>
+                                    @if (isremoving && removingId == a.Id)
+                                    {
+                                        <Chase></Chase>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-danger" @onclick="async()=>{removingId=a.Id  ;await remove(a);}">Remove</button>
+                                    }
+
+                                  
+
+                                </th>
+                            </tr>
+
+                        }
+                    </tbody>
+                </table>
+
+            </div>
+
+
+        </div>
+    </div>
+}
+
+
+
+
+
+
+
+@code {
+    [Parameter]
+    public string? adminId
+    {
+        set
+        {
+            _adminId = Guid.Parse(value);
+        }
+        get
+        {
+            return _adminId.ToString();
+        }
+    }
+
+    Guid? _adminId;
+
+    bool issaving = false;
+    bool isloading = false;
+    bool isremoving = false;
+    Admin? admin;
+
+    Roll? roll;
+
+    Guid? savinid;
+    Guid? removingId;
+    List<DataModels.Access> accesses = new List<DataModels.Access>();
+
+    List<DataModels.Page> pages = new List<DataModels.Page>();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        isloading = true;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            accesses = await dbcontext.Accesses.ToListAsync();
+            admin = await dbcontext.Admins.FirstOrDefaultAsync(x => x.Id == _adminId);
+            roll = await dbcontext.Rolls.FirstOrDefaultAsync(x => x.Id == admin.Rollid);
+            pages = await dbcontext.Pages.ToListAsync();
+        }
+
+        isloading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    async Task add(Page page)
+    {
+        issaving = true;
+        await InvokeAsync(StateHasChanged);
+        DataModels.Access a = new DataModels.Access()
+            {
+                Id = Guid.NewGuid(),
+                RollId = roll.Id,
+                PageId = page.Id
+
+            };
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            var ac = await dbcontext.Accesses.FirstOrDefaultAsync(x => x.RollId == roll.Id && x.PageId == page.Id);
+
+            if (ac == null)
+            {
+
+                dbcontext.Accesses.Add(a);
+
+                await dbcontext.SaveChangesAsync();
+
+                accesses = await dbcontext.Accesses.ToListAsync();
+                admin = await dbcontext.Admins.FirstOrDefaultAsync(x => x.Id == _adminId);
+                roll = await dbcontext.Rolls.FirstOrDefaultAsync(x => x.Id == admin.Rollid);
+
+            }
+
+
+            issaving = false;
+            await InvokeAsync(StateHasChanged);
+
+        }
+
+
+
+        StateHasChanged();
+
+    }
+
+    async Task remove(DataModels.Access a)
+    {
+        isremoving = true;
+        await InvokeAsync(StateHasChanged);
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            try
+            {
+                dbcontext.Accesses.Remove(a);
+
+                await dbcontext.SaveChangesAsync();
+                accesses = await dbcontext.Accesses.ToListAsync();
+                admin = await dbcontext.Admins.FirstOrDefaultAsync(x => x.Id == _adminId);
+                roll = await dbcontext.Rolls.FirstOrDefaultAsync(x => x.Id == admin.Rollid);
+
+            }
+            catch
+            {
+
+            }
+
+
+
+        }
+
+
+
+        isremoving = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+}

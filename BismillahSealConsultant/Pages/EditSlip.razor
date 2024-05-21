@@ -1,0 +1,494 @@
+﻿@page "/slip/{employeeId}"
+
+
+
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <label>
+                Name
+            </label>
+            <input type="text" class="form-control" @bind="extraField.Name" />
+        </div>
+        <div class="col">
+            <label>
+                Date And Year
+            </label>
+            <input type="month" class="form-control" @bind="extraField.Date" />
+        </div>
+        <div class="col">
+            <label>
+                Amount
+            </label>
+            <input type="number" class="form-control" @bind="extraField.Amount" />
+        </div>
+        <div class="col" style="padding-top:25px">
+
+            <button class="btn btn-primary btn-sm" @onclick="async() => { using(sealConsultantContext dbcontext = new sealConsultantContext()){
+
+                    extraField.Id = Guid.NewGuid();
+                    extraField.RollId =e.RollId;
+                    extraField.EmployeeId = e.Id;
+                    dbcontext.PaySlipFields.Add(extraField);
+                    await dbcontext.SaveChangesAsync();
+                    paySlipExtraFields = await dbcontext.PaySlipFields.Where(x => x.RollId == e.RollId && x.Date.Value.Month == extraField.Date.Value.Month && x.Date.Value.Year == extraField.Date.Value.Year && x.EmployeeId == e.Id).ToListAsync();
+                    extraField = new PaySlipField();
+
+                    extraField.Date = DateTime.Now;
+
+                    await InvokeAsync(StateHasChanged);
+
+
+                }
+             }">
+                +
+            </button>
+        </div>
+
+
+
+    </div>
+
+
+    <div class="row">
+        <section style="background-color: #eee;margin-top: 5vh;">
+            <div class="container payroll-nav">
+                <div class="row">
+                    <div class="col">
+                        <nav aria-label="breadcrumb" class="bg-light rounded-3 p-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <ol class="breadcrumb mb-0">
+                                        <p>Company Name : Seal Consult</p>
+                                    </ol>
+                                    <ol class="breadcrumb mb-0">
+                                        <p>Name:  @e.FirstName&nbsp;@e.LastName</p>
+                                    </ol>
+                                </div>
+                                <div>
+                                    <ol class="breadcrumb mb-0">
+                                        <p>Date: @DateOnly.FromDateTime(DateTime.Now)</p>
+                                    </ol>
+                                    <ol class="breadcrumb mb-0">
+                                        <p>EMPL # : @e.EmployeeCode</p>
+                                    </ol>
+                                </div>
+                            </div>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="col-lg-12">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row" style="display:flex">
+
+
+
+
+                            <div class="col-sm-4 payroll-form" style="width: 33.33333333%;border-right: 1px solid grey;">
+                                <div class="payroll-form-1" style="min-height:25vh;">
+                                    <p><strong>EARNINGS</strong></p>
+                                  
+                                    @foreach (var p in payrollsRelated)
+                                    {
+
+                                        <p class="mb-0 ">@p.Name</p>
+
+
+                                    }
+                                    @foreach (var payslipField in paySlipExtraFields)
+                                    {
+                                        if (payslipField.Amount >= 0)
+                                        {
+                                            <p class="mb-0 ">@payslipField.Name</p>
+                                       
+                                        }
+
+                                    }
+
+
+
+
+                                </div>
+                                <p class="text-end" style="text-align:right;padding-right:10px">TOTAL</p>
+
+                            </div>
+                            <div class="col-sm-2 payroll-form" style="width:16.66666667%;border-right: 1px solid grey;padding-left: 5px;">
+
+
+                                <div class="payroll-form-1" style="min-height:25vh">
+                                    <p><strong>RM</strong></p>
+
+                                    @foreach (var payroll in payrollsRelated)
+                                    {
+                                        @if (payroll.Amount != null)
+                                        {
+                                            <p class="text-muted mb-0 ">@payroll.Amount</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted mb-0 ">
+                                                @calculateaPAmount(@payrollsRelated.FirstOrDefault(x=>x.Id == payroll.ReletedPayrollId).Amount,@payroll.Percentage)
+                                            </p>
+                                        }
+
+
+                                    }
+                                    @foreach (var payslipField in paySlipExtraFields)
+                                    {
+                                        if (payslipField.Amount>=0)
+                                        {
+                                            <p class="text-muted mb-0 ">@payslipField.Amount <btn class="btn btn-danger btn-close" @onclick="async()=>{
+
+                                                using(sealConsultantContext dbcontext = new sealConsultantContext()){
+
+                                                    dbcontext.PaySlipFields.Remove(payslipField);
+                                                    await dbcontext.SaveChangesAsync();
+                                                    paySlipExtraFields = await dbcontext.PaySlipFields.Where(x => x.RollId == e.RollId && x.Date.Value.Month == extraField.Date.Value.Month && x.Date.Value.Year == extraField.Date.Value.Year && x.EmployeeId == e.Id).ToListAsync();
+                                                    await InvokeAsync(StateHasChanged);
+                                                }
+
+
+
+                                                }"> </btn> </p>
+                                        }
+
+                                    }
+
+
+
+
+
+                                </div>
+
+
+
+
+                                <p class="text-start">@payable</p>
+
+
+
+                            </div>
+
+
+
+                            <div class="col-sm-4 payroll-form" style="width: 33.33333333%;border-right: 1px solid grey;padding-left: 5px;">
+                                <div class="payroll-form-1" style="min-height:25vh;">
+                                    <p><strong>Deductions</strong></p>
+                                    @foreach (var d in deductionsRelated)
+                                    {
+
+                                        <p class="mb-0 ">@d.Name</p>
+
+
+                                    }
+                                    @foreach (var payslipField in paySlipExtraFields)
+                                    {
+                                        if (payslipField.Amount < 0)
+                                        {
+                                            <p class="mb-0 ">@payslipField.Name</p>
+                                        }
+
+                                    }
+
+                                </div>
+
+                                <p class="text-end" style="text-align:right;padding-right:10px">TOTAL</p>
+                            </div>
+
+
+                            <div class="col-sm-2 " style="width:16.66666667%;padding-left: 5px;">
+                                <div class="payroll-form-1" style="min-height:25vh">
+                                    <p><strong>RM</strong></p>
+                                    @foreach (var deduction in deductionsRelated)
+                                    {
+                                        @if (deduction.Amount != null)
+                                        {
+                                            <p class="text-muted mb-0 ">@deduction.Amount</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted mb-0 ">
+                                                -@calculateaPAmount(@payrollsRelated.FirstOrDefault(x=>x.Id == deduction.ReferencePaymentId).Amount,deduction.Percentage)
+                                            </p>
+                                        }
+
+
+                                    }
+                                    @foreach (var payslipField in paySlipExtraFields)
+                                    {
+                                        if (payslipField.Amount < 0)
+                                        {
+                                            <p class="text-muted mb-0 ">
+                                                @payslipField.Amount <btn class="btn btn-danger btn-close" @onclick="async()=>{
+
+                                                using(sealConsultantContext dbcontext = new sealConsultantContext()){
+
+                                                    dbcontext.PaySlipFields.Remove(payslipField);
+                                                    await dbcontext.SaveChangesAsync();
+                                                    paySlipExtraFields = await dbcontext.PaySlipFields.Where(x => x.RollId == e.RollId && x.Date.Value.Month == extraField.Date.Value.Month && x.Date.Value.Year == extraField.Date.Value.Year && x.EmployeeId == e.Id).ToListAsync();
+                                                    await InvokeAsync(StateHasChanged);
+                                                }
+
+
+
+                                                }"> </btn>
+                                            </p>
+                                        }
+
+                                    }
+
+                                </div>
+                                <p>@deduc</p>
+                            </div>
+                        </div>
+
+
+
+
+
+
+
+                        <hr>
+
+
+                        <div class="row" style="display:flex">
+                            <div class="col-sm-10" style="width: 83.33333333%;">
+                                <p class="mb-0 text-end" style="text-align:end;padding-right: 10px;">NEXT PAY</p>
+                            </div>
+                            <div class="col-sm-2" style="border: 1px solid grey;width: 16.66666667%;">
+                                <p class="text-muted mb-0 " style="padding-left:15px">@CalculateTotalSalary()</p>
+                            </div>
+                        </div>
+
+
+
+
+
+
+
+
+
+                        <div class="row">
+                            <div style="display:flex">
+                                <div class="col-sm-6" style="width:50%">
+                                    <p class="mb-0 text-center" style="text-align:center;">Current Month</p>
+                                </div>
+                                <div class="col-sm-6" style="width:50%">
+                                </div>
+                            </div>
+                            <hr>
+
+                            <div style="display:flex">
+                                <div class="col-sm-6 payroll-form" style="width:60%;border-right: 1px solid grey;">
+
+                                    @*  <div class="row ">
+                                    <div class="col-sm-3">
+                                    <p> &nbsp </p>
+                                    <p>EMPLOYEE :</p>
+                                    <p>EMPLOYEE :</p>
+                                    <p>TOTAL :</p>
+                                    </div>
+                                    <div class="col-sm-3">
+                                    <P class="payroll-form-2 text-center"> E.P.F.</P>
+                                    <p>1,100.00</p>
+                                    <p>1,200.00</p>
+                                    <p>1,300.00</p>
+                                    </div>
+                                    <div class="col-sm-3">
+                                    <P class="payroll-form-2 text-center">SOCSO</P>
+                                    <p>19.75</p>
+                                    <p>69.05</p>
+                                    <p>8.80</p>
+                                    </div>
+                                    <div class="col-sm-3">
+                                    <P class="payroll-form-2 text-center">TAX</P>
+                                    <p>-</p>
+                                    <p>700.00</p>
+                                    <p>-</p>
+                                    </div>
+
+
+                                    </div>*@
+
+
+                                </div>
+                                <div class="col-sm-6 ">
+                                    <div class="row">
+                                        <div class="col-sm-8 dex-padding" style="padding-left:10px">
+                                            <p>IC/PP :@e.IcPp</p>
+                                            <p>INCOME TAX NO :@e.TaxNumber</p>
+                                            <p>EPF NO :@e.Epf</p>
+                                            <p>SOCSO NO :@e.Socso</p>
+                                            <p>BANK A/C NO :@e.BankAcNo</p>
+                                        </div>
+
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row" style="display:flex">
+                            <div class="col-sm-6" style="width:40%">
+                                <p>&nbsp</p>
+                                <p class="mb-0">This is a machine generated slip</p>
+                            </div>
+                            <div class="col-sm-6" style="width:60%">
+                                <p>&nbsp</p>
+                                <p class="mb-0">RECEIVED BY : ______________________________</p>
+                            </div>
+                        </div>
+
+
+
+                    </div>
+                </div>
+
+            </div>
+
+
+
+        </section>
+
+
+
+
+
+
+
+
+
+    </div>
+</div>
+
+
+@code {
+    [Parameter]
+    public string employeeId { get; set; }
+    bool loading = false;
+
+    List<Payroll> payrollsRelated = new List<Payroll>();
+
+    List<Deduction> deductionsRelated = new List<Deduction>();
+
+    double? payable = 0;
+    double? deduc = 0;
+
+    Employee e;
+    int month = 1;
+
+
+    PaySlipField extraField = new PaySlipField();
+
+    List<PaySlipField> paySlipExtraFields = new List<PaySlipField>();
+
+    string alart = string.Empty;
+
+    Doc d = new Doc();
+    List<Roll> rolls = new List<Roll>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            Guid id = Guid.Parse(employeeId);
+
+            extraField.Date = DateTime.Now; 
+
+            e = dbcontext.Employees.Find(id);
+
+          //  payrollsRelated = await dbcontext.Payrolls.Where(x => x.Possition == e.RollId).ToListAsync();
+
+          //  deductionsRelated = await dbcontext.Deductions.Where(x => x.PossitionId == e.RollId).ToListAsync();
+
+            paySlipExtraFields = await dbcontext.PaySlipFields.Where(x => x.RollId == e.RollId && x.Date.Value.Month == extraField.Date.Value.Month && x.Date.Value.Year == extraField.Date.Value.Year && x.EmployeeId == e.Id).ToListAsync();
+
+
+
+        }
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    protected double? calculateaPAmount(double? mainAmount, double? percentage)
+    {
+        return (percentage / 100) * mainAmount;
+    }
+
+
+
+    double? CalculateTotalSalary()
+    {
+        double? total = 0;
+        foreach (var p in payrollsRelated)
+        {
+            if (p.Amount != null)
+            {
+                total = total + p.Amount;
+
+                payable = payable + p.Amount;
+            }
+            else if (p.Percentage != null)
+            {
+
+                total = total + calculateaPAmount(@payrollsRelated.FirstOrDefault(x => x.Id == p.ReletedPayrollId).Amount, p.Percentage);
+
+                payable = payable + calculateaPAmount(@payrollsRelated.FirstOrDefault(x => x.Id == p.ReletedPayrollId).Amount, p.Percentage);
+            }
+
+
+
+        }
+
+
+        foreach (var p in deductionsRelated)
+        {
+            if (p.Amount != null)
+            {
+                total = total - p.Amount;
+
+                deduc = deduc - p.Amount;
+
+            }
+            else if (p.Percentage != null)
+            {
+
+                total = total - calculateaPAmount(@payrollsRelated.FirstOrDefault(x => x.Id == p.ReferencePaymentId).Amount, p.Percentage);
+
+                deduc = deduc - calculateaPAmount(@payrollsRelated.FirstOrDefault(x => x.Id == p.ReferencePaymentId).Amount, p.Percentage);
+            }
+
+
+        }
+
+
+
+        foreach (var payslipField in paySlipExtraFields)
+        {
+            if (payslipField.Amount<0)
+            {
+                deduc = deduc + payslipField.Amount;
+            }
+            else
+            {
+                payable = payable + payslipField.Amount;
+            }
+
+            total = total + payslipField.Amount;
+
+        }
+
+
+
+        return total;
+    }
+
+}

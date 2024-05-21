@@ -1,0 +1,206 @@
+﻿@inject IJSRuntime mJS
+
+<div class="container-fluid shadow rounded">
+    <h3>Voice Announcemnet</h3>
+    <div class="row">
+        <div class="col-6">
+            <h5>Title</h5>
+            <input class="form-control" @bind="title" />
+        </div>
+    </div>
+   
+        <div class="row">
+            <div class="col-12">
+                <h5>Audio Recorder</h5>
+                <hr />
+                <button @onclick="butRecordAudioStart_Click" class="btn btn-primary" disabled=@mDisableRecordAudioStart>Start Record</button>
+                <button @onclick="butRecordAudioPause_Click" class="btn btn-primary" disabled=@mDisableRecordAudioPause>Pause</button>
+                <button @onclick="butRecordAudioResume_Click" class="btn btn-primary" disabled=@mDisableRecordAudioResume>Resume</button>
+                <button @onclick="butRecordAudioStop_Click" class="btn btn-primary" disabled=@mDisableRecordAudioStop>Stop</button>
+                @*  <button @onclick="butDownloadBlob_Click" class="btn btn-primary" disabled=@mDisableDownloadBlob>Save</button> *@
+                <hr />
+                <audio controls autoplay src=@mUrl></audio>
+                <hr />
+            </div>
+        </div>
+    
+   
+    
+    
+    <div class="row">
+        <div class="col-12">
+            @if (audioAnouncements != null)
+            {
+                <table class="table table-responsive table-secondary">
+                    <thead>
+                        <tr>
+                            <th>
+                                Title
+                            </th>
+                            <th>
+                                Date Time
+                            </th>
+                            <th>
+                                audio
+                            </th>
+                        </tr>
+                        @foreach (var a in audioAnouncements.OrderByDescending(x=>x.DateTime))
+                        {
+                            <tr>
+                                <td>
+                                    @a.Title
+                                </td>
+                                <td>
+                                    @a.DateTime
+                                </td>
+                                <td>
+                                    <audio controls src=@("https://sealworker.azurewebsites.net/"+ a.AudioUrl)></audio>
+                                </td>
+                            </tr>
+                        }
+
+                    </thead>
+                </table>
+            }
+          
+        </div>
+    </div>
+ 
+
+</div> 
+
+
+
+
+
+
+@code {
+    string mUrl;
+    string title = string.Empty;
+
+    List<AudioAnouncement>? audioAnouncements;
+
+    public const string FormatDateTimeStamp = "yyyy_MM_dd__HH_mm_ss_ffff";
+    bool mDisableRecordAudioStart;
+    bool mDisableRecordAudioPause = true;
+    bool mDisableRecordAudioResume = true;
+    bool mDisableRecordAudioStop = true;
+    bool mDisableDownloadBlob = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using(sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            audioAnouncements = await dbcontext.AudioAnouncements.Where(x => x.DateTime.Value.Date >= DateTime.Now.Date.AddDays(-3)).ToListAsync();
+        }
+
+        await base.OnInitializedAsync();
+        await mJS.InvokeVoidAsync("BlazorAudioRecorder.Initialize", DotNetObjectReference.Create(this));
+
+    }
+    void butRecordAudioStart_Click()
+    {
+        mUrl = "";
+        mDisableRecordAudioStart = true;
+        mDisableRecordAudioPause = false;
+        mDisableRecordAudioResume = true;
+        mDisableRecordAudioStop = false;
+        mDisableDownloadBlob = true;
+        mJS.InvokeVoidAsync("BlazorAudioRecorder.StartRecord");
+    }
+
+    void butRecordAudioPause_Click()
+    {
+        mDisableRecordAudioStart = true;
+        mDisableRecordAudioPause = true;
+        mDisableRecordAudioResume = false;
+        mDisableRecordAudioStop = false;
+        mDisableDownloadBlob = true;
+        mJS.InvokeVoidAsync("BlazorAudioRecorder.PauseRecord");
+    }
+
+    void butRecordAudioResume_Click()
+    {
+        mDisableRecordAudioStart = true;
+        mDisableRecordAudioPause = false;
+        mDisableRecordAudioResume = true;
+        mDisableRecordAudioStop = false;
+        mDisableDownloadBlob = true;
+        mJS.InvokeVoidAsync("BlazorAudioRecorder.ResumeRecord");
+    }
+
+    void butRecordAudioStop_Click()
+    {
+        mDisableRecordAudioStart = false;
+        mDisableRecordAudioPause = true;
+        mDisableRecordAudioResume = true;
+        mDisableRecordAudioStop = true;
+        mDisableDownloadBlob = false;
+        mJS.InvokeVoidAsync("BlazorAudioRecorder.StopRecord");
+    }
+
+    void butDownloadBlob_Click()
+    {
+        mJS.InvokeVoidAsync("BlazorAudioRecorder.DownloadBlob", mUrl, "MyRecording_" + DateTimeStamp() + ".mp3");
+    }
+
+    [JSInvokable]
+    public async Task OnAudioUrl(string vUrl)
+    {
+        mUrl = vUrl;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    [JSInvokable]
+    public async Task SaveAudio(string base64Audio)
+    {
+
+
+        Guid uid = Guid.NewGuid();
+
+        await InvokeAsync(StateHasChanged);
+        var bytes = Convert.FromBase64String(base64Audio);
+        var filePath = Path.Combine("wwwroot", "Audios", "MyRecording_" + uid + ".mp3");
+
+        using(sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            AudioAnouncement audioAnouncement = new AudioAnouncement
+            {
+                Id= Guid.NewGuid(),
+                DateTime= DateTime.Now,
+                Title = this.title,
+                AudioUrl = Path.Combine("Audios", "MyRecording_" + uid + ".mp3")
+            };
+
+            await dbcontext.AudioAnouncements.AddAsync(audioAnouncement);
+
+            await dbcontext.SaveChangesAsync();
+
+            audioAnouncements = await dbcontext.AudioAnouncements.Where(x => x.DateTime.Value.Date >= DateTime.Now.Date.AddDays(-3)).ToListAsync();
+        }
+
+
+
+        // Ensure the "Audios" directory exists
+        var directoryPath = Path.GetDirectoryName(filePath);
+        if (!Directory.Exists(directoryPath))
+        {
+            Directory.CreateDirectory(directoryPath);
+        }
+
+        await File.WriteAllBytesAsync(filePath, bytes);
+
+        title = string.Empty;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    public static string DateTimeStamp()
+    {
+        var pOut = DateTime.Now.ToString(FormatDateTimeStamp);
+        return pOut;
+    }
+
+
+}

@@ -1,0 +1,129 @@
+﻿@if (rollsLoading)
+{
+
+    <Chase Size="100px" style="margin-left:45%; margin-top: 45vh;"></Chase>
+
+}
+else
+{
+
+    <div class="container-fluid shadow">
+        <div class="row">
+            <div class="col-4">
+                <input placeholder="Skill Name" @bind="S.SkillName" class="form-control">
+            </div>
+            <div class="col-4">
+                @if (savingPossition)
+                {
+                    <Pulse Size="30px"></Pulse>
+                }
+                else
+                {
+                    <button class="btn btn-primary" @onclick="addPossition"> Add </button>
+                }
+
+
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:25px">
+            <div class="col-6">
+                <table class="table table-dark table-bordered border-primary">
+                    <thead>
+                        <tr>
+                            <th>
+                                Skill Name
+                            </th>
+                            <th>
+                                -
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ro in Skills)
+                        {
+                            <tr>
+                                <td>
+                                    @ro.SkillName
+                                </td>
+                                <td class="close-btn-table-width">
+                                    <button class="btn btn-close position-delete-btn" @onclick="async ()=>{
+
+                                    using(sealConsultantContext dbcontext = new sealConsultantContext())
+                                    {
+                                        try{
+
+                                              dbcontext.Skills.Remove(ro);
+                                              await dbcontext.SaveChangesAsync();
+                                              Skills = await dbcontext.Skills.ToListAsync();
+                                              await InvokeAsync(StateHasChanged);
+                                        }catch{
+
+                                        }
+
+
+
+
+                                    }
+
+
+                                    }"></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+
+
+                </table>
+
+
+            </div>
+        </div>
+
+    </div>
+}
+
+
+@code {
+
+    bool saving = false;
+    bool savingPossition = false;
+    Skill S = new Skill();
+    bool rollsLoading = true;
+    List<Skill> Skills = new List<Skill>();
+    protected override async Task OnInitializedAsync()
+    {
+        rollsLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            Skills = await dbcontext.Skills.ToListAsync();
+
+        }
+
+
+        rollsLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+
+    }
+
+    async Task addPossition()
+    {
+        savingPossition = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            S.SkillId = Guid.NewGuid();
+            dbcontext.Skills.Add(S);
+            await dbcontext.SaveChangesAsync();
+            Skills = await dbcontext.Skills.ToListAsync();
+            S = new Skill();
+
+        }
+        savingPossition = false;
+        await InvokeAsync(StateHasChanged);
+    }
+}

@@ -1,0 +1,445 @@
+﻿@page "/EditAttendance"
+
+
+
+@if (ispageLoading)
+{
+
+    <Chase style="margin-left:45%; margin-top: 45vh;"></Chase>
+
+}
+else
+{
+    @if (logger.checkAccess("/EditAttendance", rollId))
+    {
+        <div class="container-fluid shadow" style="min-height:90vh;border-radius:0% !important">
+
+            <div class="row">
+                <div class="col-6">
+
+                    <Animate Animation="Animations.ZoomIn" Duration="TimeSpan.FromSeconds(0.5)" Delay="TimeSpan.FromSeconds(0)">
+                        <div class="input-group p-1 shadow">
+                            <span class="input-group-text" id="basic-addon1">Start Date</span>
+
+
+                            <input type="date" class="form-control" @bind="startDate" />
+
+
+                            <span class="input-group-text" id="basic-addon1">End Date</span>
+
+
+                            <input type="date" class="form-control" @bind="enddate" />
+
+                            <button class="btn btn-secondary" @onclick="ondateSelect">Get Data</button>
+
+                            @if (isSavingData)
+                            {
+                                <button class="btn btn-dark"> <Flow Size="20px" Color="#FFFFFF"></Flow> </button>
+                            }
+                            else if (workerWorkingHours.Count > 0)
+                            {
+
+                                <button class="btn btn-primary" @onclick="Update">Update data</button>
+
+                            }
+
+
+
+                        </div>
+
+
+
+
+                    </Animate>
+
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <div class="col">
+                        @if (isGettingData)
+                        {
+                            <Chase></Chase>
+                        }
+                        else
+                        {
+                            <table class="table table-bordered table-sm table-responsive">
+                                <thead>
+                                    <tr class="sticky-table-header">
+                                        <th>
+                                            Employee Code
+                                        </th>
+                                        <th>
+                                            Employee Name
+                                        </th>
+                                        <th>
+                                            IC/PP
+                                        </th>
+                                        <th>
+                                            Date
+                                        </th>
+                                        <th>
+                                            In AM
+                                        </th>
+                                        <th>
+                                            In AM (revised)
+                                        </th>
+
+
+                                        <th>
+                                            Out Am
+                                        </th>
+                                        <th>
+                                            In pm
+                                        </th>
+
+                                        <th>
+
+                                            Out PM
+                                        </th>
+
+                                        <th>
+
+                                            Out PM (revised)
+                                        </th>
+
+                                        <th>
+                                            Working Hours
+                                        </th>
+
+                                        <th>
+
+                                        </th>
+
+
+                                        <th>
+                                            Revised Working Hours
+                                        </th>
+
+                                        <th>
+                                            Shift
+                                        </th>
+                                        <th>
+                                            Note
+                                        </th>
+
+
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (workerWorkingHours.Count > 0)
+                                    {
+                                        @foreach (var w in workerWorkingHours.OrderBy(x => x.Date).OrderBy(x => x.EmployeeId))
+                                        {
+
+                                            <tr>
+                                                <td>
+                                                    @employees.FirstOrDefault(x => x.Id == w.EmployeeId).EmployeeCode
+                                                </td>
+
+                                                <td>
+                                                    @employees.FirstOrDefault(x => x.Id == w.EmployeeId).FirstName &nbsp; @employees.FirstOrDefault(x => x.Id == w.EmployeeId).LastName
+                                                </td>
+                                                <td>
+                                                    @employees.FirstOrDefault(x => x.Id == w.EmployeeId).IcPp
+                                                </td>
+                                                <td>
+                                                    @if (w.Date != null)
+                                                    {
+                                                        @w.Date.Value.ToString("dddd, dd MMMM yyyy")
+                                                    }
+
+                                                </td>
+                                                <td>
+                                                    @if (w.InAm != null)
+                                                    {
+                                                        <p class="bg-primary text-white p-1"> @("Actual - " + w.InAm.Value.ToString("h:mm tt")) </p>
+
+                                                        <p class="bg-success text-white p-1"> @("Taken - " + DateTime.Today.AddHours(8).ToString("h:mm tt"))</p>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <input type="time" class="form-control">
+
+                                                </td>
+
+
+
+                                                <td>
+                                                    @if (w.OutAm != null)
+                                                    {
+                                                        <p class="bg-primary text-white p-1"> @("Actual - " + w.OutAm.Value.ToString("h:mm tt")) </p>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (w.InPm != null)
+                                                    {
+                                                        <p class="bg-primary text-white p-1"> @("Actual - " + w.InPm.Value.ToString("h:mm tt"))</p>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (w.OutPm != null)
+                                                    {
+                                                        <p class="bg-primary text-white p-1"> @("Actual - " + w.OutPm.Value.ToString("h:mm tt")) </p>
+
+                                                        <p class="bg-success text-white p-1"> @("Rounded - " + RoundUp(w.OutPm.Value, TimeSpan.FromMinutes(15)).ToString("h:mm tt"))</p>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <input type="time" class="form-control" @onchange="async(ChangeEventArgs e)=> await changeWokingHour(e,w)">
+
+                                                </td>
+
+                                                <td>
+                                                    @if (w.WokingHours != null)
+                                                    {
+
+                                                        if (w.WokingHours > new TimeSpan(0, 14, 0, 0, 0))
+                                                        {
+
+
+                                                            <input class="form-control text-danger" @bind="w.WokingHours" disabled>
+
+
+
+
+
+                                                        }
+                                                        else if (w.WokingHours < new TimeSpan(0, 0, 0, 0, 0))
+                                                        {
+
+
+                                                            <input class="form-control text-info" @bind="w.WokingHours">
+
+                                                        }
+                                                        else
+                                                        {
+                                                            <p>
+
+                                                                <input class="form-control" @bind="w.WokingHours" disabled>
+
+
+                                                            </p>
+                                                        }
+
+                                                    }
+                                                    else
+                                                    {
+                                                        <input class="form-control text-info" value="Inconsistant" disabled>
+                                                    }
+                                                </td>
+
+                                                <td>
+                                                    @if (w.WokingHours != null)
+                                                    {
+
+                                                        @* if (w.WokingHours > new TimeSpan(0, 14, 0, 0, 0))
+                                {*@
+
+                                                        <button class="btn btn-sm"><span class="oi oi-arrow-circle-right" @onclick="()=>{w.WorkingHoursRevised = w.WokingHours; StateHasChanged(); }"></span> </button>
+
+                                                        @*  }*@
+
+                                                    }
+
+
+
+                                                </td>
+
+
+
+
+                                                <td>
+                                                    <input class="form-control text-danger" value="@w.WorkingHoursRevised" @onchange="@((ChangeEventArgs __e) =>{
+
+                                                try{
+                                                    w.WorkingHoursRevised = TimeSpan.Parse(__e?.Value?.ToString());
+                                                    }catch{
+                                                                var parameters = new ModalParameters().Add(nameof(OkModal.Message),$"{__e?.Value?.ToString()} is not the current format for time");
+
+                                                                var modal = Modal.Show<OkModal>("Please correect the time format", parameters);
+
+                                                }
+
+
+
+
+
+                                                 })">
+
+
+
+                                                </td>
+
+                                                <td>
+                                                    <select class="form-select" @bind="w.Shift">
+                                                        <option value="Day">day</option>
+                                                        <option value="Night">Night</option>
+                                                        <option value="Over_Night">Over Night</option>
+                                                    </select>
+                                                </td>
+
+                                                <td>
+                                                    <textarea class="form-control" @bind="w.Note" rows="3" style="width:100%"></textarea>
+                                                </td>
+
+
+
+                                            </tr>
+
+
+
+                                        }
+
+
+
+
+                                    }
+
+
+                                </tbody>
+
+                            </table>
+                        }
+
+
+                    </div>
+
+
+
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+}
+
+
+
+@code {
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+    [CascadingParameter] Blazored.Modal.Services.IModalService Modal { get; set; } = default!;
+    List<WorkerWorkingHour> workerWorkingHours = new List<WorkerWorkingHour>();
+    List<Employee> employees = new List<Employee>();
+    bool ispageLoading = true;
+    bool isGettingData = false;
+    bool isSavingData = false;
+
+    DateOnly selectedDate;
+
+    DateOnly startDate = DateOnly.FromDateTime(DateTime.Today);
+
+    DateOnly enddate = DateOnly.FromDateTime(DateTime.Today);
+
+    List<DataModels.Chart> charts = new List<DataModels.Chart>();
+    ChatSchema? chatSchema = new ChatSchema();
+    protected override async Task OnInitializedAsync()
+    {
+        ispageLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        rollId = await localStorage.GetItemAsync<string>("Roll");
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            employees = await dbcontext.Employees.ToListAsync();
+
+            chatSchema = dbcontext.ChatSchemas.FirstOrDefault(x => x.DateEnded == null);
+
+            if (chatSchema != null)
+            {
+
+                charts = await dbcontext.Charts.Where(x => x.ChartSchemaId == chatSchema.Id).ToListAsync();
+
+            }
+
+        }
+        ispageLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+    async Task ondateSelect()
+    {
+        isGettingData = true;
+        await InvokeAsync(StateHasChanged);
+
+
+
+
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            workerWorkingHours = await dbcontext.WorkerWorkingHours.Where(x => x.Date >= startDate && x.Date <= enddate).ToListAsync();
+        }
+
+
+        isGettingData = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    async Task Update()
+    {
+        isSavingData = true;
+        await InvokeAsync(StateHasChanged);
+
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            dbcontext.UpdateRange(workerWorkingHours);
+
+            await dbcontext.SaveChangesAsync();
+        }
+
+
+        isSavingData = false;
+        await InvokeAsync(StateHasChanged);
+
+        var parameters = new ModalParameters().Add(nameof(OkModal.Message), $"Data Saved");
+
+        var modal = Modal.Show<OkModal>("Alart", parameters);
+
+
+
+    }
+
+    async Task changeWokingHour(ChangeEventArgs e, WorkerWorkingHour w)
+    {
+        var outPm = DateTime.Parse(e?.Value?.ToString());
+
+        var roundedUPOut = RoundUp(outPm, TimeSpan.FromMinutes(15));
+
+
+        DataModels.Chart chart = charts.FirstOrDefault(x => x.Outtime.Value.TimeOfDay == roundedUPOut.TimeOfDay);
+
+        if (chart != null)
+        {
+            w.WokingHours = chart?.Hour;
+        }
+
+
+
+        await InvokeAsync(StateHasChanged);
+
+
+    }
+
+
+    DateTime RoundUp(DateTime dt, TimeSpan d)
+    {
+        return new DateTime((dt.Ticks + d.Ticks - 1) / d.Ticks * d.Ticks, dt.Kind);
+    }
+}

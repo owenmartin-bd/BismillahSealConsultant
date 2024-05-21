@@ -1,0 +1,471 @@
+﻿@page "/print"
+@using System.Globalization
+
+
+
+
+
+@if (loading)
+{
+    <Chase style="margin-left:45%; margin-top: 45vh;"></Chase>
+}
+else
+{
+    @if (logger.checkAccess("/print", rollId))
+    {
+        <div class="container-fluid">
+            <div class="row">
+
+                <div class="col-5">
+
+                    <Animate Animation="Animations.ZoomIn" Duration="TimeSpan.FromSeconds(0.5)" Delay="TimeSpan.FromSeconds(0)">
+                        <div class="input-group p-1 shadow">
+                            <span class="input-group-text" id="basic-addon1">Select a month</span>
+                            <input type="month" class="form-control" @onchange="(ChangeEventArgs e)=>onMonthSelect(e)" />
+                            <span class="input-group-text" id="basic-addon1">Select Project</span>
+                            <select class="form-select" aria-label="Default select example" @onchange="(ChangeEventArgs e)=>selectProject(e)">
+                                <option selected value="All">All</option>
+                                @foreach (Project p in projects)
+                                {
+                                    <option value="@p.Id">@p.ProjectName</option>
+
+                                }
+                            </select>
+
+
+                            <button class="btn">
+                                <span class="oi oi-print" aria-hidden="true"></span> Print
+                            </button>
+
+                        </div>
+
+
+
+
+                    </Animate>
+
+                </div>
+
+
+
+
+
+
+            </div>
+        </div>
+        <form id="printable-form">
+            <div class="container">
+
+
+
+
+
+                @if (distchpatchFields != null)
+                {
+                    @foreach (Employee e in employees)
+                    {
+                        <div class="row">
+                            <section style="background-color: #eee;margin-top: 5vh;">
+                                <div class="container payroll-nav">
+                                    <div class="row">
+                                        <div class="col">
+                                            <nav aria-label="breadcrumb" class="bg-light rounded-3 p-2 mb-2">
+                                                <div class="d-flex justify-content-between">
+                                                    <div>
+                                                        <ol class="breadcrumb mb-0">
+                                                            <p>Company Name : Seal Consult</p>
+                                                        </ol>
+                                                        <ol class="breadcrumb mb-0">
+                                                            <p>Name: @e.FirstName &nbsp; @e.LastName</p>
+                                                        </ol>
+                                                    </div>
+                                                    <div>
+                                                        <ol class="breadcrumb mb-0">
+                                                            <p>Date: @DateOnly.FromDateTime(DateTime.Now)</p>
+                                                        </ol>
+                                                        <ol class="breadcrumb mb-0">
+                                                            <p>EMPL # : @e.EmployeeCode</p>
+                                                        </ol>
+                                                    </div>
+                                                </div>
+                                            </nav>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <div class="col-lg-12">
+                                    <div class="card mb-4">
+                                        <div class="card-body">
+                                            <div class="row">
+
+
+
+                                                <div class="col-sm-4 payroll-form">
+                                                    <div class="payroll-form-1">
+                                                        @foreach (var d in distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning == true))
+                                                        {
+
+
+                                                            <p class="mb-0 ">
+                                                                @d.Name
+                                                            </p>
+
+                                                        }
+
+
+
+
+
+
+
+
+                                                    </div>
+                                                    <p> &nbsp </p>
+                                                    <p class="text-end">TOTAL</p>
+
+                                                </div>
+                                                <div class="col-sm-2 payroll-form">
+
+
+                                                    <div class="payroll-form-1">
+                                                        <p>RM</p>
+
+                                                        @foreach (var d in distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning == true))
+                                                        {
+                                                            <p class="text-muted mb-0 "> @d.Amount?.ToString("F", CultureInfo.InvariantCulture)</p>
+
+                                                        }
+
+
+
+
+
+
+
+
+                                                    </div>
+
+
+
+
+                                                    <p class="text-start">@distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning == true).Select(x => x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)</p>
+
+
+
+                                                </div>
+
+
+
+                                                <div class="col-sm-4 payroll-form">
+                                                    <div class="payroll-form-1">
+
+                                                        @foreach (var d in distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning != true))
+                                                        {
+                                                            <p class="mb-0 ">@d.Name</p>
+
+                                                        }
+
+
+                                                    </div>
+                                                    <p class="text-end">TOTAL</p>
+                                                </div>
+
+
+                                                <div class="col-sm-2 ">
+                                                    <div class="payroll-form-1">
+                                                        @foreach (var d in distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning != true))
+                                                        {
+                                                            <p class="text-muted mb-0 "> @d.Amount?.ToString("F", CultureInfo.InvariantCulture)</p>
+
+                                                        }
+                                                    </div>
+                                                    <p>  <p class="text-start">@distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning != true).Select(x => x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)</p></p>
+                                                </div>
+                                            </div>
+
+
+
+
+
+
+
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-10">
+                                                    <p class="mb-0 text-end">Total</p>
+                                                </div>
+                                                <div class="col-sm-2" style="border: 1px solid grey">
+                                                    <p class="text-muted mb-0 "> @depatches.FirstOrDefault(x=>x.EmplyeeId == e.Id)?.TotalAmount?.ToString("F", CultureInfo.InvariantCulture) <br /> (paid - @depatches.FirstOrDefault(x=>x.EmplyeeId == e.Id)?.ActualAmount?.ToString("F", CultureInfo.InvariantCulture)) </p>
+
+                                                </div>
+                                            </div>
+
+
+
+
+
+
+
+
+                                            <div class="row">
+                                                <div class="col-sm-6">
+                                                    <p class="mb-0 text-center">Current Month</p>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                </div>
+                                                <hr>
+                                                <div class="col-sm-6 payroll-form">
+                                                </div>
+                                                <div class="col-sm-6 ">
+                                                    <div class="row">
+                                                        <div class="col-sm-4">
+                                                            <p>IC/PP :</p>
+                                                            <p>INCOME TAX NO :</p>
+                                                            <p>EPF NO : </p>
+                                                            <p>SOCSO NO :</p>
+                                                            <p>BANK A/C NO :</p>
+                                                        </div>
+                                                        <div class="col-sm-8">
+                                                            <p>@e.IcPp</p>
+                                                            <p>@e.TaxNumber</p>
+                                                            <p>@e.Epf</p>
+                                                            <p>@e.Socso</p>
+                                                            <p>@e.BankAcNo</p>
+                                                        </div>
+
+
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-6">
+                                                    <p>&nbsp</p>
+                                                    <p class="mb-0">This is a machine generated slip</p>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <p>&nbsp</p>
+                                                    <p class="mb-0">RECEIVED BY : ______________________________</p>
+                                                </div>
+                                            </div>
+
+
+
+                                        </div>
+                                    </div>
+
+                                </div>
+
+
+
+                            </section>
+
+
+
+
+
+
+
+
+                        </div>
+                    }
+                }
+
+
+
+            </div>
+        </form>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+  
+}
+
+
+
+
+@code {
+    bool loading = true;
+    bool isgettingdate = false;
+
+    List<Employee> employees;
+    List<Depatch> depatches;
+    List<ViewDispacfield> distchpatchFields;
+    List<Project> projects;
+
+    [Parameter]
+    public string? PerameterMonth { get; set; }
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+        rollId = await localStorage.GetItemAsync<string>("Roll");
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            employees = await dbcontext.Employees.Where(x => x.Active == true).OrderBy(x => x.FirstName).ToListAsync();
+            projects = await dbcontext.Projects.Where(x => x.IsSubProject != true).ToListAsync();
+
+            if (PerameterMonth != null)
+            {
+                DateOnly month = DateOnly.Parse(PerameterMonth);
+                distchpatchFields = await dbcontext.ViewDispacfields.Where(x => x.Month == month).ToListAsync();
+            }
+        }
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    async Task onMonthSelect(ChangeEventArgs e)
+    {
+        isgettingdate = true;
+        await InvokeAsync(StateHasChanged);
+        DateOnly month = DateOnly.Parse(e?.Value?.ToString());
+
+        Console.WriteLine(month);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+            distchpatchFields = await dbcontext.ViewDispacfields.Where(x => x.Month == month).ToListAsync();
+
+            depatches = await dbcontext.Depatches.Where(x => x.Month == month).ToListAsync();
+
+        }
+        isgettingdate = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    double? getTotalEarning()
+    {
+        double? totalEarning = 0;
+
+        @foreach (Employee e in employees)
+        {
+            foreach (var d in distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning == true))
+            {
+                if (d.Amount != null)
+                {
+                    totalEarning = d.Amount + totalEarning;
+                }
+
+            }
+        }
+
+
+
+
+        return totalEarning;
+
+    }
+
+    double? getTotalDeduction()
+    {
+        double? totalDeductions = 0;
+
+        @foreach (Employee e in employees)
+        {
+            foreach (var d in distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning != true))
+            {
+                if (d.Amount != null)
+                {
+                    totalDeductions = d.Amount + totalDeductions;
+                }
+
+
+            }
+        }
+
+
+
+
+        return totalDeductions;
+
+    }
+
+    double? getTotalGrandTotal()
+    {
+        double? total = 0;
+
+
+        total = getTotalEarning() - getTotalDeduction();
+
+
+
+
+        return total;
+
+    }
+
+
+
+    async Task selectProject(ChangeEventArgs e)
+    {
+        isgettingdate = true;
+        await InvokeAsync(StateHasChanged);
+
+        if (e?.Value?.ToString() == "All")
+        {
+            using (sealConsultantContext dbcontext = new sealConsultantContext())
+            {
+                employees = await dbcontext.Employees.Where(x => x.Active == true).OrderBy(x => x.FirstName).ToListAsync();
+            }
+
+        }
+        else
+        {
+            var projectid = Guid.Parse(e?.Value?.ToString());
+
+
+            using (sealConsultantContext dbcontext = new sealConsultantContext())
+            {
+                var ProjectEmployeeList = await dbcontext.ProjectEmployees.Where(x => x.ProjectId == projectid && x.Iscurrent == true).ToListAsync();
+
+                var tempemployees = await dbcontext.Employees.Where(x => x.Active == true).OrderBy(x => x.FirstName).ToListAsync();
+
+                employees = new List<Employee>();
+
+                foreach (var pe in ProjectEmployeeList)
+                {
+                    var emp = tempemployees.FirstOrDefault(x => x.Id == pe.EmployeeId);
+
+                    if (emp != null)
+                    {
+                        employees.Add(emp);
+                    }
+
+                }
+
+
+
+
+
+                //employees = await dbcontext.Employees.Where(x=> ProjectEmployeeList.Any(y=>y.EmployeeId == x.Id)).ToListAsync();
+
+
+            }
+
+
+        }
+
+        isgettingdate = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+
+}

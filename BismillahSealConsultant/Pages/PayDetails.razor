@@ -1,0 +1,186 @@
+﻿@page "/Paydeatiels/{empid}"
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-3">
+            
+                <h5>@e?.FirstName @e?.LastName (@e?.EmployeeCode)</h5>
+            
+       
+
+        </div>
+
+    </div>
+
+     <div class="row">
+         <div class="col-12">
+             <div class="p-1">
+                <form>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text" id="filterDateLabel">Start date</span>
+                        <input type="date" class="form-control" placeholder="Filter by Date" aria-label="Filter Start Date" aria-describedby="filterDateLabel" @bind="filterStartDate">
+                        <span class="input-group-text" id="filterDateLabel">End date</span>
+                        <input type="date" class="form-control" placeholder="Filter by Date" aria-label="Filter End Date" aria-describedby="filterDateLabel" @bind="filterEndDate">
+
+
+                        <span class="input-group-text" id="filterPayDateLabel">Filter by payment date </span>
+                        <input type="date" class="form-control" placeholder="Filter by Pay Date" aria-label="Filter by Pay Date" aria-describedby="filterPayDateLabel" @bind="filterPayDate">
+
+                        <button type="button" class="btn btn-outline-primary" @onclick="ApplyFilters">Search</button>
+                        <button type="button" class="btn btn-outline-danger" @onclick="()=>{filterStartDate = null; filterPayDate = null ; ChangePage(currentPage);}">Clear</button>
+                    </div>
+                </form>
+
+             </div>
+
+            @if (!isLoading)
+            {
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>In Time (Actual)</th>
+                            <th>Out Time (Actual)</th>
+                            <th>In Time </th>
+                            <th>Out Time </th>
+                            <th>On Site</th>
+                            <th>Break Time</th>
+                            <th>Overtime</th>
+                            <th>Actual Hours</th>
+                            <th>Overtime Extra Hours</th>
+                            <th>Total Hours</th>
+                            <th>Rate per Hour</th>
+                            <th>Total Earned</th>
+                          
+                            <th>Paid</th>
+                            <th>Payment Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in filteredDetails.OrderByDescending(x => x.Date))
+                        {
+                            <tr>
+                                <td>@item.Date?.ToString("dd-MM-y")</td>
+                                <td>@item.IntimeActual?.ToString("dd-MM-y HH:mm:ss")</td>
+                                <td>@item.OutTimeActual?.ToString("dd-MM-y HH:mm:ss")</td>
+                                <td>@item.InTime?.ToString("dd-MM-y HH:mm:ss")</td>
+                                <td>@item.OutTime?.ToString("dd-MM-y HH:mm:ss")</td>
+                                <td>@item.OnSite?.ToString(@"hh\:mm\:ss")</td>
+                                <td>@item.BreakTime?.ToString(@"hh\:mm\:ss")</td>
+                                <td>@item.OverTime?.ToString(@"hh\:mm\:ss")</td>
+                                <td>@item.ActualHours?.ToString(@"hh\:mm\:ss")</td>
+                                <td>@item.OtExtraHours?.ToString(@"hh\:mm\:ss")</td>
+                                <td>@item.TotalHours?.ToString(@"hh\:mm\:ss")</td>
+                                <td>@item.RatePerHour?.ToString("C")</td>
+                                <td>@item.TotalEarnedOnDate?.ToString("C")</td>
+                             
+                                <td>@(item.Paid ? "Yes" : "No")</td>
+                                <td>@item.Paidate?.ToString("yyyy-MM-dd")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                            <button class="page-link" @onclick="()=>ChangePage(currentPage - 1)">Previous</button>
+                        </li>
+                  
+                        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                            <button class="page-link" @onclick="()=>ChangePage(currentPage + 1)">Next</button>
+                        </li>
+                    </ul>
+                </nav>
+            }
+            else
+            {
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            }
+
+           
+
+         </div>
+     </div>
+
+
+ </div>
+
+
+
+@code {
+    bool isLoading = true;
+    DateOnly? filterStartDate;
+    DateOnly? filterEndDate;
+    DateOnly? filterPayDate;
+    List<WorkerPaymentDetailsBydate> workerPaymentDetailsBydates = new List<WorkerPaymentDetailsBydate>();
+    List<WorkerPaymentDetailsBydate> filteredDetails = new List<WorkerPaymentDetailsBydate>();
+
+    [Parameter]
+    public string? empid { get; set; }
+
+    Employee? e;
+
+    // Pagination variables
+    int currentPage = 1;
+    int itemsPerPage = 10;
+    int totalPages;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            Guid id = Guid.Parse(empid);
+            workerPaymentDetailsBydates = await dbcontext.WorkerPaymentDetailsBydates
+                .Where(x => x.EmployeeId == id)
+                .ToListAsync();
+
+            e = await dbcontext.Employees.FirstOrDefaultAsync(x=>x.Id == id);
+        }
+        ApplyFilters();
+         ChangePage(currentPage);
+     
+    }
+
+    private void ApplyFilters()
+    {
+        filteredDetails = workerPaymentDetailsBydates;
+
+        if (filterStartDate.HasValue && filterEndDate.HasValue)
+        {
+            filteredDetails = filteredDetails.Where(x => x.Date >= filterStartDate && x.Date <= filterEndDate).ToList();
+        }
+
+        if (filterPayDate.HasValue)
+        {
+            filteredDetails = filteredDetails.Where(x => x.Paidate == filterPayDate).ToList();
+        }
+       
+        isLoading = false;
+    }
+
+    private void UpdateCurrentPageData()
+    {
+        filteredDetails = workerPaymentDetailsBydates
+            .Skip((currentPage - 1) * itemsPerPage)
+            .Take(itemsPerPage)
+            .ToList();
+
+        isLoading = false;
+    }
+
+    private void ChangePage(int newPage)
+    {
+        currentPage = newPage;
+        UpdateCurrentPageData();
+    }
+}

@@ -1,0 +1,54 @@
+﻿<div class="container">
+    <div class="row">
+        <div class="col">
+            <div class="input-group">
+
+                <input type="text" class="form-control" @bind="group.GroupName" placeholder="Group Name" />
+                <button class="btn btn-dark btn-sm" @onclick="@(async()=>{
+
+                using(sealConsultantContext dbcontext = new sealConsultantContext()){
+
+                    group.Id=Guid.NewGuid();
+                    group.ProjectId = Guid.Parse(projectID);
+
+
+                    dbcontext.Groups.Add(group);
+
+                    await dbcontext.SaveChangesAsync();
+
+                    alart = $"{group.GroupName} Group has been created";
+                    group = new Group();
+                    await InvokeAsync(StateHasChanged);
+                }
+
+            })">
+                     Save
+                    <span class="oi oi-plus" aria-hidden="true"></span>
+                </button>
+
+
+            </div>
+        </div>
+    </div>
+    @if (alart != string.Empty)
+    {
+        <div class="row p-5" style="margin-top:10px">
+            <div class="col">
+                <div class="alert alert-success" role="alert">
+                    @alart
+                </div>
+
+            </div>
+        </div>
+    }
+    
+</div>
+
+
+
+
+@code {
+    Group group = new Group();
+    [Parameter] public string? projectID { get; set; }
+    string alart = string.Empty;
+}

@@ -1,0 +1,733 @@
+﻿@page "/addemployee"
+@using BlazorInputFile
+@using BismillahSealConsultant.Service;
+
+@inject IFileUpload fileUpload
+
+
+@if (rollsLoading)
+{
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+
+                <Chase Size="100px" style="margin-left:45%; margin-top: 45vh;"></Chase>
+
+            </div>
+        </div>
+
+    </div>
+}
+else
+{
+
+    @if (logger.checkAccess("/addemployee", rollId))
+    {
+        <section style="background-color: #fff;padding-top: 3vh;" class="shadow">
+
+            <div class="container-fluid payroll-nav add-employee-con">
+                <div class="row bg-opacity-75 bg-gradient">
+                    <div class="col-12">
+                    </div>
+
+
+                </div>
+
+
+                <div class="row bg-opacity-75 bg-gradient">
+                    <div class="col-6">
+
+
+                        <div class="mb-3">
+                            <label class="form-label">First Name</label>
+                            <input type="text" @bind="employee.FirstName" class="form-control">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" @bind="employee.LastName" class="form-control">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Current Address</label>
+                            <textarea rows="3" @bind="employee.CurrentAddress" class="form-control"></textarea>
+                        </div>
+
+                        <div class="mb-3" style="margin-bottom:0px !important">
+
+                            <label class="form-label">Employee Picture (.jpg/.png)</label>
+                            <BlazorInputFile.InputFile OnChange="HandleFileSelected"></BlazorInputFile.InputFile>
+                            <br />
+                            @if (alart != string.Empty)
+                            {
+                                <div class="alert alert-secondary" style="margin-top:5px" role="alert">
+                                    @alart
+                                </div>
+                            }
+
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Employee Code</label>
+                            <input type="text" @bind="employee.EmployeeCode" class="form-control">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Date of Birth</label>
+                            <input type="date" @bind="employee.Dob" class="form-control">
+
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">CIDB </label>
+                            <input type="text" @bind="employee.Cidb" class="form-control">
+
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">CIDB Expiry Date </label>
+                            <input type="date" @bind="employee.CidbExpDate" class="form-control">
+
+                        </div>
+
+
+                        <div class="mb-3">
+                            <label class="form-label">SOCSO</label>
+                            <input type="text" @bind="employee.Socso" class="form-control">
+
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">EPF</label>
+                            <input type="text" @bind="employee.Epf" class="form-control">
+
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Joining Date</label>
+                            <input type="date" @bind="employee.JoiningDate" class="form-control">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tax Number</label>
+                            <input type="text" @bind="employee.TaxNumber" class="form-control">
+
+                        </div>
+
+
+
+                        <div class="mb-3">
+                            <label class="form-label">Remark</label> &nbsp;
+                            <textarea @bind="employee.Remark" rows="2" class="form-control"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+
+                                <input class="form-check-input" @bind="employee.Own" type="checkbox">
+                                <label> Check if Seal's Employee </label>
+                            </div>
+
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+
+                                <input class="form-check-input" @bind="employee.Active" type="checkbox">
+                                <label> Check if Active Employee</label>
+                            </div>
+
+                        </div>
+
+                    </div>
+                    @*.....................................................................................................................................................................*@
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label class="form-label">Position</label>
+                            <div class="row">
+                                <div class="col-4">
+
+
+
+
+                                    <select @bind="employee.RollId" class="form-control ">
+                                        <option value="" selected disabled>Please Select a Possition</option>
+
+                                        @foreach (Roll r in rolls)
+                                        {
+                                            <option value="@r.Id">@r.Name</option>
+                                        }
+
+
+
+                                    </select>
+
+                                </div>
+
+
+                                <div class="col-8">
+
+                                    <div class="accordion " id="accordionExample">
+                                        <div class="accordion-item">
+                                            <h6 class="accordion-header" id="flush-headingOne">
+                                                <button class="accordion-button collapsed btn-sm add-position" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOne" aria-expanded="false" aria-controls="flush-collapseOne">
+                                                    Add New Position
+                                                </button>
+                                            </h6>
+
+
+                                            <div id="flush-collapseOne" class="accordion-collapse collapse" style="padding:8px" aria-labelledby="flush-headingOne" data-bs-parent="#accordionFlushExample">
+                                                <div class="container-fluid">
+                                                    <div class="row">
+                                                        <div class="col-8">
+                                                            <input placeholder="Possition name" @bind="p.Name" class="form-control">
+                                                        </div>
+                                                        <div class="col-4">
+                                                            @if (savingPossition)
+                                                            {
+                                                                <Pulse Size="30px"></Pulse>
+                                                            }
+                                                            else
+                                                            {
+                                                                <button class="btn btn-primary" @onclick="addPossition"> Add </button>
+                                                            }
+
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+
+
+
+
+                        <div class="mb-3">
+                            <label class="form-label">e-Mail</label>
+                            <input type="text" @bind="employee.Email" class="form-control">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Pemanant Address</label>
+                            <textarea rows="3" @bind="employee.PemanantAddress" class="form-control"></textarea>
+
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Phone</label>
+                            <input type="tel" @bind="employee.Phone" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="margin-top:13px">Emergency Contact Name</label>
+                            <input type="text" @bind="employee.EmerhencyContactName" class="form-control">
+
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Emergency Contact Number</label>
+                            <input type="tel" @bind="employee.EmergencyContact" class="form-control">
+
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Relation With Contact</label>
+                            <input type="text" @bind="employee.EmergengyContactRelation" class="form-control">
+
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nationality</label>
+                            <select @bind="employee.Nationality" class="form-control">
+                                <option value="" selected disabled>Please Select a country</option>
+                                <option value="Afghanistan">Afghanistan</option>
+                                <option value="Åland Islands">Åland Islands</option>
+                                <option value="Albania">Albania</option>
+                                <option value="Algeria">Algeria</option>
+                                <option value="American Samoa">American Samoa</option>
+                                <option value="Andorra">Andorra</option>
+                                <option value="Angola">Angola</option>
+                                <option value="Anguilla">Anguilla</option>
+                                <option value="Antarctica">Antarctica</option>
+                                <option value="Antigua and Barbuda">Antigua and Barbuda</option>
+                                <option value="Argentina">Argentina</option>
+                                <option value="Armenia">Armenia</option>
+                                <option value="Aruba">Aruba</option>
+                                <option value="Australia">Australia</option>
+                                <option value="Austria">Austria</option>
+                                <option value="Azerbaijan">Azerbaijan</option>
+                                <option value="Bahamas">Bahamas</option>
+                                <option value="Bahrain">Bahrain</option>
+                                <option value="Bangladesh">Bangladesh</option>
+                                <option value="Barbados">Barbados</option>
+                                <option value="Belarus">Belarus</option>
+                                <option value="Belgium">Belgium</option>
+                                <option value="Belize">Belize</option>
+                                <option value="Benin">Benin</option>
+                                <option value="Bermuda">Bermuda</option>
+                                <option value="Bhutan">Bhutan</option>
+                                <option value="Bolivia">Bolivia</option>
+                                <option value="Bosnia and Herzegovina">Bosnia and Herzegovina</option>
+                                <option value="Botswana">Botswana</option>
+                                <option value="Bouvet Island">Bouvet Island</option>
+                                <option value="Brazil">Brazil</option>
+                                <option value="British Indian Ocean Territory">British Indian Ocean Territory</option>
+                                <option value="Brunei Darussalam">Brunei Darussalam</option>
+                                <option value="Bulgaria">Bulgaria</option>
+                                <option value="Burkina Faso">Burkina Faso</option>
+                                <option value="Burundi">Burundi</option>
+                                <option value="Cambodia">Cambodia</option>
+                                <option value="Cameroon">Cameroon</option>
+                                <option value="Canada">Canada</option>
+                                <option value="Cape Verde">Cape Verde</option>
+                                <option value="Cayman Islands">Cayman Islands</option>
+                                <option value="Central African Republic">Central African Republic</option>
+                                <option value="Chad">Chad</option>
+                                <option value="Chile">Chile</option>
+                                <option value="China">China</option>
+                                <option value="Christmas Island">Christmas Island</option>
+                                <option value="Cocos (Keeling) Islands">Cocos (Keeling) Islands</option>
+                                <option value="Colombia">Colombia</option>
+                                <option value="Comoros">Comoros</option>
+                                <option value="Congo">Congo</option>
+                                <option value="Congo, The Democratic Republic of The">Congo, The Democratic Republic of The</option>
+                                <option value="Cook Islands">Cook Islands</option>
+                                <option value="Costa Rica">Costa Rica</option>
+                                <option value="Cote D'ivoire">Cote D'ivoire</option>
+                                <option value="Croatia">Croatia</option>
+                                <option value="Cuba">Cuba</option>
+                                <option value="Cyprus">Cyprus</option>
+                                <option value="Czech Republic">Czech Republic</option>
+                                <option value="Denmark">Denmark</option>
+                                <option value="Djibouti">Djibouti</option>
+                                <option value="Dominica">Dominica</option>
+                                <option value="Dominican Republic">Dominican Republic</option>
+                                <option value="Ecuador">Ecuador</option>
+                                <option value="Egypt">Egypt</option>
+                                <option value="El Salvador">El Salvador</option>
+                                <option value="Equatorial Guinea">Equatorial Guinea</option>
+                                <option value="Eritrea">Eritrea</option>
+                                <option value="Estonia">Estonia</option>
+                                <option value="Ethiopia">Ethiopia</option>
+                                <option value="Falkland Islands (Malvinas)">Falkland Islands (Malvinas)</option>
+                                <option value="Faroe Islands">Faroe Islands</option>
+                                <option value="Fiji">Fiji</option>
+                                <option value="Finland">Finland</option>
+                                <option value="France">France</option>
+                                <option value="French Guiana">French Guiana</option>
+                                <option value="French Polynesia">French Polynesia</option>
+                                <option value="French Southern Territories">French Southern Territories</option>
+                                <option value="Gabon">Gabon</option>
+                                <option value="Gambia">Gambia</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Germany">Germany</option>
+                                <option value="Ghana">Ghana</option>
+                                <option value="Gibraltar">Gibraltar</option>
+                                <option value="Greece">Greece</option>
+                                <option value="Greenland">Greenland</option>
+                                <option value="Grenada">Grenada</option>
+                                <option value="Guadeloupe">Guadeloupe</option>
+                                <option value="Guam">Guam</option>
+                                <option value="Guatemala">Guatemala</option>
+                                <option value="Guernsey">Guernsey</option>
+                                <option value="Guinea">Guinea</option>
+                                <option value="Guinea-bissau">Guinea-bissau</option>
+                                <option value="Guyana">Guyana</option>
+                                <option value="Haiti">Haiti</option>
+                                <option value="Heard Island and Mcdonald Islands">Heard Island and Mcdonald Islands</option>
+                                <option value="Holy See (Vatican City State)">Holy See (Vatican City State)</option>
+                                <option value="Honduras">Honduras</option>
+                                <option value="Hong Kong">Hong Kong</option>
+                                <option value="Hungary">Hungary</option>
+                                <option value="Iceland">Iceland</option>
+                                <option value="India">India</option>
+                                <option value="Indonesia">Indonesia</option>
+                                <option value="Iran, Islamic Republic of">Iran, Islamic Republic of</option>
+                                <option value="Iraq">Iraq</option>
+                                <option value="Ireland">Ireland</option>
+                                <option value="Isle of Man">Isle of Man</option>
+                                <option value="Israel">Israel</option>
+                                <option value="Italy">Italy</option>
+                                <option value="Jamaica">Jamaica</option>
+                                <option value="Japan">Japan</option>
+                                <option value="Jersey">Jersey</option>
+                                <option value="Jordan">Jordan</option>
+                                <option value="Kazakhstan">Kazakhstan</option>
+                                <option value="Kenya">Kenya</option>
+                                <option value="Kiribati">Kiribati</option>
+                                <option value="Korea, Democratic People's Republic of">Korea, Democratic People's Republic of</option>
+                                <option value="Korea, Republic of">Korea, Republic of</option>
+                                <option value="Kuwait">Kuwait</option>
+                                <option value="Kyrgyzstan">Kyrgyzstan</option>
+                                <option value="Lao People's Democratic Republic">Lao People's Democratic Republic</option>
+                                <option value="Latvia">Latvia</option>
+                                <option value="Lebanon">Lebanon</option>
+                                <option value="Lesotho">Lesotho</option>
+                                <option value="Liberia">Liberia</option>
+                                <option value="Libyan Arab Jamahiriya">Libyan Arab Jamahiriya</option>
+                                <option value="Liechtenstein">Liechtenstein</option>
+                                <option value="Lithuania">Lithuania</option>
+                                <option value="Luxembourg">Luxembourg</option>
+                                <option value="Macao">Macao</option>
+                                <option value="Macedonia, The Former Yugoslav Republic of">Macedonia, The Former Yugoslav Republic of</option>
+                                <option value="Madagascar">Madagascar</option>
+                                <option value="Malawi">Malawi</option>
+                                <option value="Malaysia">Malaysia</option>
+                                <option value="Maldives">Maldives</option>
+                                <option value="Mali">Mali</option>
+                                <option value="Malta">Malta</option>
+                                <option value="Marshall Islands">Marshall Islands</option>
+                                <option value="Martinique">Martinique</option>
+                                <option value="Mauritania">Mauritania</option>
+                                <option value="Mauritius">Mauritius</option>
+                                <option value="Mayotte">Mayotte</option>
+                                <option value="Mexico">Mexico</option>
+                                <option value="Micronesia, Federated States of">Micronesia, Federated States of</option>
+                                <option value="Moldova, Republic of">Moldova, Republic of</option>
+                                <option value="Monaco">Monaco</option>
+                                <option value="Mongolia">Mongolia</option>
+                                <option value="Montenegro">Montenegro</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Morocco">Morocco</option>
+                                <option value="Mozambique">Mozambique</option>
+                                <option value="Myanmar">Myanmar</option>
+                                <option value="Namibia">Namibia</option>
+                                <option value="Nauru">Nauru</option>
+                                <option value="Nepal">Nepal</option>
+                                <option value="Netherlands">Netherlands</option>
+                                <option value="Netherlands Antilles">Netherlands Antilles</option>
+                                <option value="New Caledonia">New Caledonia</option>
+                                <option value="New Zealand">New Zealand</option>
+                                <option value="Nicaragua">Nicaragua</option>
+                                <option value="Niger">Niger</option>
+                                <option value="Nigeria">Nigeria</option>
+                                <option value="Niue">Niue</option>
+                                <option value="Norfolk Island">Norfolk Island</option>
+                                <option value="Northern Mariana Islands">Northern Mariana Islands</option>
+                                <option value="Norway">Norway</option>
+                                <option value="Oman">Oman</option>
+                                <option value="Pakistan">Pakistan</option>
+                                <option value="Palau">Palau</option>
+                                <option value="Palestinian Territory, Occupied">Palestinian Territory, Occupied</option>
+                                <option value="Panama">Panama</option>
+                                <option value="Papua New Guinea">Papua New Guinea</option>
+                                <option value="Paraguay">Paraguay</option>
+                                <option value="Peru">Peru</option>
+                                <option value="Philippines">Philippines</option>
+                                <option value="Pitcairn">Pitcairn</option>
+                                <option value="Poland">Poland</option>
+                                <option value="Portugal">Portugal</option>
+                                <option value="Puerto Rico">Puerto Rico</option>
+                                <option value="Qatar">Qatar</option>
+                                <option value="Reunion">Reunion</option>
+                                <option value="Romania">Romania</option>
+                                <option value="Russian Federation">Russian Federation</option>
+                                <option value="Rwanda">Rwanda</option>
+                                <option value="Saint Helena">Saint Helena</option>
+                                <option value="Saint Kitts and Nevis">Saint Kitts and Nevis</option>
+                                <option value="Saint Lucia">Saint Lucia</option>
+                                <option value="Saint Pierre and Miquelon">Saint Pierre and Miquelon</option>
+                                <option value="Saint Vincent and The Grenadines">Saint Vincent and The Grenadines</option>
+                                <option value="Samoa">Samoa</option>
+                                <option value="San Marino">San Marino</option>
+                                <option value="Sao Tome and Principe">Sao Tome and Principe</option>
+                                <option value="Saudi Arabia">Saudi Arabia</option>
+                                <option value="Senegal">Senegal</option>
+                                <option value="Serbia">Serbia</option>
+                                <option value="Seychelles">Seychelles</option>
+                                <option value="Sierra Leone">Sierra Leone</option>
+                                <option value="Singapore">Singapore</option>
+                                <option value="Slovakia">Slovakia</option>
+                                <option value="Slovenia">Slovenia</option>
+                                <option value="Solomon Islands">Solomon Islands</option>
+                                <option value="Somalia">Somalia</option>
+                                <option value="South Africa">South Africa</option>
+                                <option value="South Georgia and The South Sandwich Islands">South Georgia and The South Sandwich Islands</option>
+                                <option value="Spain">Spain</option>
+                                <option value="Sri Lanka">Sri Lanka</option>
+                                <option value="Sudan">Sudan</option>
+                                <option value="Suriname">Suriname</option>
+                                <option value="Svalbard and Jan Mayen">Svalbard and Jan Mayen</option>
+                                <option value="Swaziland">Swaziland</option>
+                                <option value="Sweden">Sweden</option>
+                                <option value="Switzerland">Switzerland</option>
+                                <option value="Syrian Arab Republic">Syrian Arab Republic</option>
+                                <option value="Taiwan">Taiwan</option>
+                                <option value="Tajikistan">Tajikistan</option>
+                                <option value="Tanzania, United Republic of">Tanzania, United Republic of</option>
+                                <option value="Thailand">Thailand</option>
+                                <option value="Timor-leste">Timor-leste</option>
+                                <option value="Togo">Togo</option>
+                                <option value="Tokelau">Tokelau</option>
+                                <option value="Tonga">Tonga</option>
+                                <option value="Trinidad and Tobago">Trinidad and Tobago</option>
+                                <option value="Tunisia">Tunisia</option>
+                                <option value="Turkey">Turkey</option>
+                                <option value="Turkmenistan">Turkmenistan</option>
+                                <option value="Turks and Caicos Islands">Turks and Caicos Islands</option>
+                                <option value="Tuvalu">Tuvalu</option>
+                                <option value="Uganda">Uganda</option>
+                                <option value="Ukraine">Ukraine</option>
+                                <option value="United Arab Emirates">United Arab Emirates</option>
+                                <option value="United Kingdom">United Kingdom</option>
+                                <option value="United States">United States</option>
+                                <option value="United States Minor Outlying Islands">United States Minor Outlying Islands</option>
+                                <option value="Uruguay">Uruguay</option>
+                                <option value="Uzbekistan">Uzbekistan</option>
+                                <option value="Vanuatu">Vanuatu</option>
+                                <option value="Venezuela">Venezuela</option>
+                                <option value="Viet Nam">Viet Nam</option>
+                                <option value="Virgin Islands, British">Virgin Islands, British</option>
+                                <option value="Virgin Islands, U.S.">Virgin Islands, U.S.</option>
+                                <option value="Wallis and Futuna">Wallis and Futuna</option>
+                                <option value="Western Sahara">Western Sahara</option>
+                                <option value="Yemen">Yemen</option>
+                                <option value="Zambia">Zambia</option>
+                                <option value="Zimbabwe">Zimbabwe</option>
+                            </select>
+
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">NRIC/Pasport</label>
+                            <input type="text" @bind="employee.IcPp" class="form-control">
+
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Passport Expiry Date</label>
+                            <input type="date" @bind="employee.PassExp" class="form-control">
+
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Visa Expiry date</label>
+                            <input type="date" @bind="employee.VisaExp" class="form-control">
+
+                        </div>
+
+
+                        <div class="mb-3">
+                            <label class="form-label">Level</label>
+                            <select type="text" @bind="employee.Level" class="form-control">
+                                <option selected disabled>Please Select</option>
+                                <option value="Staff">Staff</option>
+                                <option value="Worker">Worker</option>
+                                <option value="Foreman">Foreman</option>
+                            </select>
+
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">OT Elegibility</label>
+                            <select type="text" @bind="employee.OtElecgibility" class="form-control">
+                                <option selected disabled>Please Select</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+
+                            </select>
+
+                        </div>
+
+
+
+                    </div>
+
+                </div>
+                <div class="row">
+
+                    <div class="col">
+                        @if (saving)
+                        {
+                            <Pulse></Pulse>
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary" @onclick="saveEmployee">Save</button>
+                        }
+                        @if (alartSaving != string.Empty)
+                        {
+                            <div class="alert alert-secondary" style="margin-top:5px" role="alert">
+                                @alartSaving
+                            </div>
+                        }
+
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+  
+
+}
+
+
+
+
+
+
+@code {
+    [CascadingParameter] Blazored.Modal.Services.IModalService Modal { get; set; } = default!;
+
+
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+ 
+    bool saving = false;
+    bool savingPossition = false;
+    Employee employee = new Employee();
+    IFileListEntry file { get; set; }
+    string alart = string.Empty;
+    string alartSaving = string.Empty;
+    List<Roll> rolls = new List<Roll>();
+    bool rollsLoading = true;
+    Roll p = new Roll();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        rollsLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            rolls = await dbcontext.Rolls.ToListAsync();
+            rollId = await localStorage.GetItemAsync<string>("Roll");
+        }
+
+
+        rollsLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+
+
+
+
+
+
+    }
+
+    async Task addPossition()
+    {
+        savingPossition = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            p.Id = Guid.NewGuid();
+            dbcontext.Rolls.Add(p);
+            await dbcontext.SaveChangesAsync();
+            rolls = await dbcontext.Rolls.ToListAsync();
+        }
+        savingPossition = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    async Task HandleFileSelected(IFileListEntry[] files)
+    {
+        file = files.FirstOrDefault();
+
+        try
+        {
+            if (file.Type == "image/jpeg" || file.Type == "image/png")
+            {
+                //await fileUpload.UploadAsync(file, "DATA.csv", "CsvFiles");
+                alart = $"{file.Name} is Ready to upload";
+            }
+            else
+            {
+                alart = "Chose a jpeg or png file";
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch
+        {
+            alart = "File not supprted";
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+
+    private async Task ShowModal(string message)
+    {
+        var parameters = new ModalParameters().Add(nameof(OkModal.Message), message);
+
+        var modal = Modal.Show<OkModal>("Confimation", parameters);
+
+
+        var result = await modal.Result;
+
+    }
+
+    async Task saveEmployee()
+    {
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            try
+            {
+
+                if (file != null)
+                {
+
+                    saving = true;
+                    await InvokeAsync(StateHasChanged);
+                    employee.Id = Guid.NewGuid();
+                    if (file.Type == "image/jpeg")
+                    {
+                        employee.Photo = $"{employee.Id}.jpg";
+                        await fileUpload.UploadAsync(file, $"{employee.Id}.jpg", "Photos");
+                    }
+                    else if (file.Type == "image/png")
+                    {
+                        employee.Photo = $"{employee.Id}.png";
+                        await fileUpload.UploadAsync(file, $"{employee.Id}.png", "Photos");
+                    }
+
+
+                    employee.EntryCreated = DateTime.Now;
+                    dbcontext.Employees.Add(employee);
+                    await dbcontext.SaveChangesAsync();
+
+
+                    file = null;
+                    employee = new Employee();
+                    alartSaving = "Data Saved";
+                    alart = string.Empty;
+                    saving = false;
+                    await InvokeAsync(StateHasChanged);
+                }
+
+                else
+                {
+                    alart = "Please upload a Picture here";
+                }
+            }
+            catch (Exception ex)
+            {
+                alartSaving = ex.ToString();
+
+                await InvokeAsync(StateHasChanged);
+            }
+
+
+        }
+
+        await ShowModal("New Employee Record Created");
+
+    }
+}

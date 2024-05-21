@@ -1,0 +1,375 @@
+﻿@page "/requestAdvance"
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+
+@if (loading)
+{
+    <div class="container-fluid">
+        <Chase></Chase>
+    </div>
+}
+else
+{
+
+    <div class="container-fluid">
+
+        <div class="row">
+            <div class="col-md-3 employe-list-scroll m-2" style="overflow-y:auto; height:80vh">
+                <Animate Animation="Animations.SlideUp" Duration="TimeSpan.FromSeconds(1)" Delay="TimeSpan.FromSeconds(0)">
+                    <table class="table table-bordered table-responsive   employee-list">
+                        <thead class="sticky-top">
+                            <tr class="sticky-table-header thead-dark">
+
+
+
+                                <th @onclick="()=>{employeeListSearched= employeeList.OrderBy(x=>x.FirstName).ToList();}">
+                                    Name
+                                </th>
+                                <th @onclick="()=>{employeeListSearched= employeeList.OrderBy(x=>x.IcPp).ToList();}">
+                                    IC/PP
+                                </th>
+                                <th @onclick="()=>{employeeListSearched= employeeList.OrderBy(x=>x.EmployeeCode).ToList();}">
+                                    Code
+                                </th>
+
+
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var e in employeeListSearched)
+                            {
+                                @if (selectedEmployees.Contains(e))
+                                {
+                                    <tr class="table-light-1" @onclick="()=>selectedEmployees.Remove(e)">
+
+
+
+
+                                        <td>
+                                            @e.FirstName&nbsp;@e.LastName
+                                        </td>
+                                        <td>
+                                            @e.IcPp
+                                        </td>
+                                        <td>
+                                            @e.EmployeeCode
+                                        </td>
+
+
+
+                                    </tr>
+                                }
+
+
+                            }
+                            @foreach (var e in employeeListSearched)
+                            {
+                                @if (!selectedEmployees.Contains(e))
+                                {
+                                    <tr class="table-dark" @onclick="()=> {selectedEmployees.Add(e);}">
+
+
+                                        <td>
+                                            @e.FirstName&nbsp;@e.LastName
+                                        </td>
+                                        <td>
+                                            @e.IcPp
+                                        </td>
+                                        <td>
+                                            @e.EmployeeCode
+                                        </td>
+
+
+                                    </tr>
+                                }
+
+                            }
+
+
+
+                        </tbody>
+                    </table>
+                </Animate>
+
+
+            </div>
+
+            <div class="col-md-9 m-2">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="input-group">
+
+                            <span class="input-group-text" id="basic-addon1"> Amount </span>
+
+                            <input class="form-control" placeholder="Enter the amount here" type="number" @bind="advance.Amount" />
+
+                        </div>
+
+                    </div>
+                    <div class="col-6">
+                        @if (saving)
+                        {
+                            <Chase></Chase>
+                        }
+                        else
+                        {
+                            <button class="btn btn-success" @onclick="save"> Request </button>
+                        }
+
+
+                    </div>
+
+                </div>
+
+
+                <div class="row m-2">
+                    <div class="col-md-6 shadow-lg" style="height:80vh; overflow-y:scroll">
+                        <h5 class="py-3">Awating Approval</h5>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Employee Requested
+                                    </th>
+                                    <th>
+                                        Amount
+                                    </th>
+
+                                    <th>
+                                        Date Requested
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in advancestoRequested)
+                                {
+                                    <tr>
+                                        <td>
+                                            @employeeList.FirstOrDefault(x=>x.Id == a.EmployeeId)?.FirstName&nbsp;@employeeList.FirstOrDefault(x=>x.Id == a.EmployeeId)?.LastName
+                                        </td>
+                                        <td>
+                                            @a.Amount
+                                        </td>
+                                        <td>
+                                            @a.RequestedDate
+                                        </td>
+
+                                    </tr>
+
+                                }
+
+
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6 shadow-lg" style="height:80vh; overflow-y:scroll">
+                        <h5 class="py-3">Awating to be Dispatched</h5>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Employee Requested
+                                    </th>
+                                    <th>
+                                        Amount
+                                    </th>
+
+                                    <th>
+                                        Date Requested
+                                    </th>
+                                    <th>
+                                        Date Approved
+                                    </th>
+                                    <th>
+                                        Approved By
+                                    </th>
+                                    <th>
+
+                                    </th>
+
+
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in advancestoDeatchpath.OrderByDescending(x => x.ApprovalDate).ThenBy(x => x.Approved))
+                                {
+                                    <tr>
+                                        <td>
+                                            @employeeList.FirstOrDefault(x=>x.Id == a.EmployeeId)?.FirstName&nbsp;@employeeList.FirstOrDefault(x=>x.Id == a.EmployeeId)?.LastName
+                                        </td>
+                                        <td>
+                                            @a.Amount
+                                        </td>
+                                        <td>
+                                            @a.RequestedDate
+                                        </td>
+                                        <td>
+                                            @a.ApprovalDate
+                                        </td>
+                                        <td>
+                                            @employeeList.FirstOrDefault(x=>x.Id == a.ApprovedBy)?.FirstName&nbsp;@employeeList.FirstOrDefault(x=>x.Id == a.ApprovedBy)?.LastName
+                                        </td>
+                                        <td>
+                                            @if (updating && selectedAdvance == a)
+                                            {
+                                                <Flow></Flow>
+                                            }
+                                            else
+                                            {
+                                                if (a.Detchpatched == true)
+                                                {
+                                                    <button class="btn btn-secondary" @onclick="()=>dispatched(a)" disabled>Dispatched</button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-secondary" @onclick="()=>dispatched(a)">Dispatch</button>
+                                                }
+
+                                               
+                                            }
+
+
+                                        </td>
+
+                                    </tr>
+
+                                }
+
+
+                            </tbody>
+                        </table>
+                    </div>
+
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+    </div>
+}
+
+
+@code {
+    List<Employee> employeeList = new List<Employee>();
+    List<Employee> employeeListSearched = new List<Employee>();
+    List<Employee> selectedEmployees = new List<Employee>();
+
+    List<Advance> advancestoDeatchpath = new List<Advance>();
+    List<Advance> advancestoRequested = new List<Advance>();
+
+    Employee? e;
+
+    bool loading = true;
+    bool saving = false;
+    bool updating = false;
+    Advance? selectedAdvance;
+
+    string rollId = string.Empty;
+    Advance advance = new Advance();
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+            employeeList = await dbcontext.Employees.Where(x => x.Level != "Staff" && x.Level != "Admin").OrderByDescending(x => x.Active).ThenBy(x => x.FirstName).ToListAsync();
+
+
+
+            employeeListSearched = employeeList;
+
+            var Userid = await localStorage.GetItemAsync<Guid>("ID");
+
+            e = await dbcontext.Employees.FindAsync(Userid);
+
+            rollId = await localStorage.GetItemAsync<string>("Roll");
+
+
+            advancestoDeatchpath = await dbcontext.Advances.Where(x => x.Requested == true && x.Approved == true && x.RequestBy == Userid && x.Detchpatched != true).ToListAsync();
+
+            advancestoRequested = await dbcontext.Advances.Where(x => x.Requested==true && x.Approved == null && x.RequestBy == Userid).ToListAsync();
+        }
+
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    async Task dispatched(Advance a)
+    {
+        updating = true;
+        selectedAdvance = a;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            var adv = await dbcontext.Advances.FindAsync(a.Id);
+
+            adv.Detchpatched = true;
+            adv.DeatchpathedDate = DateOnly.FromDateTime(DateTime.Now);
+
+            await dbcontext.SaveChangesAsync();
+            advancestoDeatchpath = await dbcontext.Advances.Where(x => x.Requested == true && x.Approved == true && x.RequestBy == e.Id && x.Detchpatched != true).ToListAsync();
+        }
+
+        updating = false;
+        selectedAdvance = null;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    async Task save()
+    {
+        saving = true;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            foreach (var employee in selectedEmployees)
+            {
+                Advance a = new Advance()
+                    {
+                        Id = Guid.NewGuid(),
+                        RequestedDate = DateOnly.FromDateTime(DateTime.Now),
+                        RequestBy = e?.Id,
+                        Amount = advance.Amount,
+                    
+                        Requested = true,
+                      
+                        EmployeeId = employee.Id
+
+                    };
+
+
+                dbcontext.Advances.Add(a);
+
+
+
+            }
+
+            await dbcontext.SaveChangesAsync();
+
+            advancestoRequested = await dbcontext.Advances.Where(x => x.Approved == null && x.RequestBy == e.Id).ToListAsync();
+        }
+        advance = new Advance();
+        selectedEmployees = new List<Employee>();
+
+        saving = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

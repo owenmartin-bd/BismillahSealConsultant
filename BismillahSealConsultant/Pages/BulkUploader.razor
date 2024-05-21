@@ -1,0 +1,756 @@
+﻿@page "/bulk"
+@using BlazorInputFile
+@using LumenWorks.Framework.IO.Csv;
+@using System.Data;
+@using System.IO;
+@using System.Globalization;
+@using System;
+@using Microsoft.EntityFrameworkCore
+@inject IFileUpload fileUpload
+@using System.Data.SqlClient
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-4">
+            <div class="form-group">
+                <h5>Please upload CSV file to create user.</h5>
+                <BlazorInputFile.InputFile OnChange="HandleFileSelected"></BlazorInputFile.InputFile>
+
+            </div>
+
+            <br />
+            <button class="btn btn-link"> Click here to download the templete <span class="oi oi-spreadsheet link-success"></span> </button>
+
+            @if (file != null)
+            {
+                <div class="alert alert-dismissible">
+                    <p> <strong>Uploaded File- </strong>@file.Name</p>
+                    <p> <strong>@alart</strong></p>
+
+                </div>
+            }
+            @if (_isReading)
+            {
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden"></span>
+                </div>
+
+            }
+
+        </div>
+        <div class="col">
+            @if (newRolls != 0 && newEmployees != 0)
+            {
+                <table>
+                    <tbody>
+                        <tr>
+                            <th>
+                                New Rolls created
+                            </th>
+                            <td>
+                                @newRolls
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                New Employees created
+                            </th>
+                            <td>
+                                @newEmployees
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+
+        </div>
+    </div>
+    <div class="row m-1">
+        <div class="col p-1" style="padding:5px;">
+            @if (isSaving)
+            {
+
+                <Chase></Chase>
+
+            }
+            else
+            {
+                <button class="btn btn-primary" @onclick="savedata">save</button>
+            }
+
+
+
+        </div>
+    </div>
+
+
+ @*    <div class="row">
+        <div class="col" style="height:70vh;overflow-y:auto">
+            @if (csvTable.Columns.Count > 0)
+            {
+                <table class="table table-dark table-sm table-hover">
+                    <thead>
+                        <tr>
+
+                            @for (int i = 0; i < csvTable.Columns.Count; i++)
+                            {
+                                <th class="sticky-sm-top">@csvTable.Columns[i].ColumnName.ToString()</th>
+                            }
+
+                        </tr>
+                    </thead>
+
+
+                    <tbody>
+
+                        @for (int i = 0; i < csvTable.Rows.Count; i++)
+                        {
+                            <tr>
+                                @for (int y = 0; y < csvTable.Columns.Count; y++)
+                                {
+
+                                    <td scope="col">
+
+                                        @csvTable.Rows[i][y].ToString()
+
+                                    </td>
+
+
+                                }
+                            </tr>
+
+                        }
+
+
+
+
+                    </tbody>
+
+                </table>
+
+
+            }
+            else
+            {
+
+
+            }
+
+        </div>
+    </div> *@
+
+
+
+</div>
+
+
+
+
+
+@code {
+
+    IFileListEntry file { get; set; }
+    bool loading = false;
+    bool isSaving = false;
+    bool _isReading = false;
+
+    int newRolls = 0;
+    int newEmployees = 0;
+
+    string alart = string.Empty;
+    DataTable csvTable = new DataTable();
+
+    List<Roll> Rolls = new List<Roll>();
+
+    protected override Task OnParametersSetAsync()
+    {
+        return base.OnParametersSetAsync();
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+            Rolls = await dbcontext.Rolls.ToListAsync();
+
+
+        }
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+
+
+
+    async Task HandleFileSelected(IFileListEntry[] files)
+    {
+
+        file = files.FirstOrDefault();
+        csvTable = new DataTable();
+
+
+        try
+        {
+            if (file.Type == "text/csv")
+            {
+                await fileUpload.UploadAsync(file, "DATA.csv", "CsvFiles");
+                alart = "File Uploaded";
+            }
+            else
+            {
+                alart = "Chose a csv file";
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch
+        {
+            alart = "File Not uploaded try again";
+            await InvokeAsync(StateHasChanged);
+        }
+
+        _isReading = true;
+        await InvokeAsync(StateHasChanged);
+
+        // readData();
+        await ReadDataAsync();
+        _isReading = false;
+        alart = "Data reading finished";
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+
+
+    async Task ReadDataAsync()
+    {
+        try
+        {
+            await Task.Run(() =>
+            {
+                using (var stream = File.OpenRead(@"wwwroot/CsvFiles/DATA.csv"))
+                using (var reader = new StreamReader(stream))
+                using (var csvReader = new CsvReader(reader, hasHeaders: true))
+                {
+                    csvTable.Clear(); // Clear existing data to prevent mixing old and new data
+                    csvTable.Load(csvReader);
+
+                }
+            });
+            //  Console.WriteLine("reading finished");
+        }
+        catch (Exception ex)
+        {
+            alart = ex.ToString();
+            await InvokeAsync(StateHasChanged); // Ensure UI thread is used for state changes if necessary
+        }
+    }
+
+
+    async Task savedata()
+    {
+        isSaving = true;
+        await InvokeAsync(StateHasChanged);
+
+
+
+
+
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            List<Level> levels = await dbcontext.Levels.ToListAsync();
+
+            List<Level> templvl = levels.ToList();
+
+            for (int Row = 0; Row < csvTable.Rows.Count; Row++)
+            {
+                if (csvTable.Rows[Row][3] != DBNull.Value)
+                {
+                    var level = levels.FirstOrDefault(x => x.LevelName?.ToLower() == csvTable.Rows[Row][3].ToString()?.ToLower());
+
+                    if (level == null)
+                    {
+                        level = new Level()
+                            {
+                                LevelId = Guid.NewGuid(),
+                                LevelName = csvTable.Rows[Row][3].ToString()?.ToLower()
+                            };
+                        levels.Add(level);
+                    }
+                }
+
+            }
+
+            foreach (var l in levels)
+            {
+                if (!templvl.Contains(l))
+                {
+                    await dbcontext.Levels.AddAsync(l);
+                }
+            }
+
+            // await dbcontext.Levels.AddRangeAsync(levels);
+
+            await dbcontext.SaveChangesAsync();
+
+            levels = await dbcontext.Levels.ToListAsync();
+
+
+
+            List<Roll> Rolls = await dbcontext.Rolls.ToListAsync();
+
+            List<Roll> tempRoll = Rolls.ToList();
+
+            for (int Row = 0; Row < csvTable.Rows.Count; Row++)
+            {
+                if (csvTable.Rows[Row][4] != DBNull.Value)
+                {
+                    var roll = Rolls.FirstOrDefault(x => x.Name?.ToLower() == csvTable.Rows[Row][4].ToString()?.ToLower());
+
+
+
+                    if (roll == null)
+                    {
+                        Roll r = new Roll
+                            {
+                                Id = Guid.NewGuid(),
+                                Isactive = true,
+                                Name = csvTable.Rows[Row][4].ToString(),
+                                LevelId = levels.FirstOrDefault(x => x.LevelName?.ToLower() == csvTable.Rows[Row][3].ToString()?.ToLower())?.LevelId
+                            };
+
+                        Rolls.Add(r);
+
+                    }
+
+
+
+                }
+
+
+            }
+            newRolls = Rolls.Count;
+
+            foreach (var r in Rolls)
+            {
+                if (!tempRoll.Contains(r))
+                {
+                    await dbcontext.Rolls.AddAsync(r);
+                }
+            }
+
+
+            //await dbcontext.AddRangeAsync(Rolls);
+
+
+
+              await dbcontext.SaveChangesAsync();
+
+            this.Rolls = await dbcontext.Rolls.ToListAsync();
+        }
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            Random random = new Random();
+            for (int Row = 0; Row < csvTable.Rows.Count; Row++)
+            {
+                Employee e = new Employee()
+                    {
+                        Password = new string(Enumerable.Repeat("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", 8)
+                                                                       .Select(s => s[random.Next(s.Length)]).ToArray())
+                    };
+
+                e.Id = Guid.NewGuid();
+
+
+                for (int Col = 0; Col < csvTable.Columns.Count; Col++)
+                {
+
+
+                    if (Col == 0)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+                            e.EmployeeCode = csvTable.Rows[Row][Col].ToString();
+
+
+                        }
+                    }
+                    else if (Col == 1)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+
+                            if (csvTable.Rows[Row][Col].ToString() == "Active" || csvTable.Rows[Row][Col].ToString() == "HOLIDAY")
+                            {
+                                e.Active = true;
+                            }
+                            else
+                            {
+                                e.Active = false;
+                            }
+
+
+                        }
+                    }
+
+
+                    else if (Col == 2)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+
+                            string[] dateFormats = { "dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd", "dd-MM-yyyy", "M/d/yyyy", "d/M/yyyy" };
+
+                            // Attempt to parse the date
+                            if (DateTime.TryParseExact(csvTable.Rows[Row][Col].ToString(), dateFormats,
+                                new CultureInfo("ms-MY"), DateTimeStyles.None, out DateTime parsedDate))
+                            {
+                                e.JoiningDate = DateOnly.FromDateTime(parsedDate);
+                            }
+                            //e.JoiningDate = DateOnly.FromDateTime(DateTime.Parse(csvTable.Rows[Row][Col].ToString(), new CultureInfo("ms-MY")));
+                        }
+                    }
+
+                    else if (Col == 3)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+                            e.Level = csvTable.Rows[Row][Col].ToString();
+
+
+                        }
+                    }
+
+                    else if (Col == 4)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+                            Console.WriteLine(csvTable.Rows[Row][Col].ToString());
+
+                            e.RollId = Rolls.FirstOrDefault(x => x.Name == csvTable.Rows[Row][Col].ToString())?.Id;
+
+
+                        }
+                    }
+
+                    else if (Col == 5)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+
+
+                            e.Department = csvTable.Rows[Row][Col].ToString();
+
+
+                        }
+                    }
+                    else if (Col == 6)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+                            string fullName = csvTable.Rows[Row][Col].ToString();
+                            string[] nameParts = fullName.Split(' ', 2); // Split by the first space
+
+                            e.FirstName = nameParts[0]; // The first part is always the first name
+                            if (nameParts.Length > 1)
+                            {
+                                e.LastName = nameParts[1]; // The second part is the last name
+                            }
+                            else
+                            {
+                                e.LastName = ""; // If there is no space, the last name is an empty string
+                            }
+                        }
+                    }
+
+                    else if (Col == 7)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+                            e.Nationality = csvTable.Rows[Row][Col].ToString();
+
+
+                        }
+                    }
+                    else if (Col == 8)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+                            e.CurrentAddress = csvTable.Rows[Row][Col].ToString();
+
+
+                        }
+                    }
+                    else if (Col == 9)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+                            e.IcPp = csvTable.Rows[Row][Col].ToString();
+
+
+                        }
+                    }
+
+
+                    else if (Col == 10)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+
+                            string[] dateFormats = { "dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd", "dd-MM-yyyy", "M/d/yyyy", "d/M/yyyy" };
+
+
+                            if (DateTime.TryParseExact(csvTable.Rows[Row][Col].ToString(), dateFormats,
+                                new CultureInfo("ms-MY"), DateTimeStyles.None, out DateTime parsedDate))
+                            {
+                                e.Dob = DateOnly.FromDateTime(parsedDate);
+                            }
+
+                        }
+                    }
+
+                    else if (Col == 11)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+
+                            string[] dateFormats = { "dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd", "dd-MM-yyyy", "M/d/yyyy", "d/M/yyyy" };
+
+
+                            if (DateTime.TryParseExact(csvTable.Rows[Row][Col].ToString(), dateFormats,
+                                new CultureInfo("ms-MY"), DateTimeStyles.None, out DateTime parsedDate))
+                            {
+                                e.VisaExp = DateOnly.FromDateTime(parsedDate);
+                            }
+
+                        }
+                    }
+
+                    else if (Col == 12)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+
+                            string[] dateFormats = { "dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd", "dd-MM-yyyy", "M/d/yyyy", "d/M/yyyy" };
+
+
+                            if (DateTime.TryParseExact(csvTable.Rows[Row][Col].ToString(), dateFormats,
+                                new CultureInfo("ms-MY"), DateTimeStyles.None, out DateTime parsedDate))
+                            {
+                                e.PassExp = DateOnly.FromDateTime(parsedDate);
+                            }
+
+                        }
+                    }
+
+
+
+
+
+                    else if (Col == 28)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+                            string input = "RM12.60";
+                            string numericString = input.Replace("RM", "").Trim(); // Remove "RM" and trim any whitespace
+
+                            if (double.TryParse(numericString, out double result))
+                            {
+                                WorkerHourlyRate workerHourlyRate = new WorkerHourlyRate
+                                    {
+                                        Id = Guid.NewGuid(),
+                                        EmployeeId = e.Id,
+                                        SinceDate = DateTime.Now,
+                                        Rate = result
+
+                                    };
+
+                                dbcontext.WorkerHourlyRates.Add(workerHourlyRate);
+
+
+
+                            }
+
+
+                        }
+                    }
+
+
+
+
+                    else if (Col == 30)
+                    {
+                        if (csvTable.Rows[Row][Col] != DBNull.Value)
+                        {
+                            e.MysjId = csvTable.Rows[Row][Col].ToString();
+
+
+                        }
+                    }
+
+                    newEmployees = Row;
+
+                }
+
+
+                dbcontext.Employees.Add(e);
+
+            }
+            Console.WriteLine("now saving attempt");
+            await dbcontext.SaveChangesAsync();
+        }
+        isSaving = false;
+        await InvokeAsync(StateHasChanged);
+
+
+
+    }
+
+
+    //async Task savedata()
+    //{
+    //    isSaving = true;
+    //    await InvokeAsync(StateHasChanged);
+    //    using (sealConsultantContext dbcontext = new sealConsultantContext())
+    //    {
+
+    //        for (int Row = 0; Row < csvTable.Rows.Count; Row++)
+    //        {
+    //            Employee e = new Employee();
+
+    //            e.Id = Guid.NewGuid();
+
+    //            for (int Col = 0; Col < csvTable.Columns.Count; Col++)
+        //            {
+
+
+
+    //                if (Col == 1)
+    //                {
+    //                    if (csvTable.Rows[Row][Col] != DBNull.Value)
+    //                    {
+
+    //                        e.EmployeeCode = csvTable.Rows[Row][Col].ToString();
+
+    //                    }
+    //                }
+    //                else if (Col == 2)
+    //                {
+    //                    if (csvTable.Rows[Row][Col] != DBNull.Value)
+    //                    {
+
+    //                        if (csvTable.Rows[Row][Col].ToString() == "Active")
+    //                        {
+    //                            e.Active = true;
+    //                        }
+    //                        else
+    //                        {
+    //                            e.Active = false;
+    //                        }
+
+    //                    }
+    //                }
+    //                else if (Col == 3)
+    //                {
+    //                    if (csvTable.Rows[Row][Col] != DBNull.Value)
+    //                    {
+
+    //                        if (csvTable.Rows[Row][Col].ToString() == "Own")
+    //                        {
+    //                            e.Own = true;
+    //                        }
+    //                        else
+    //                        {
+    //                            e.Own = false;
+    //                        }
+
+    //                    }
+    //                }
+    //                else if (Col == 4)
+    //                {
+    //                    if (csvTable.Rows[Row][Col] != DBNull.Value)
+    //                    {
+
+    //                        var name = csvTable.Rows[Row][Col].ToString().Split(" ");
+
+    //                        e.FirstName = name[0];
+
+
+    //                        if (name.Count() > 1)
+    //                        {
+    //                            e.LastName = name[1];
+    //                        }
+
+
+
+    //                    }
+    //                }
+
+    //                else if (Col == 6)
+    //                {
+    //                    if (csvTable.Rows[Row][Col] != DBNull.Value)
+    //                    {
+
+    //                        e.Nationality = csvTable.Rows[Row][Col].ToString();
+
+    //                    }
+    //                }
+    //                else if (Col == 7)
+    //                {
+    //                    if (csvTable.Rows[Row][Col] != DBNull.Value)
+    //                    {
+
+    //                        e.IcPp = csvTable.Rows[Row][Col].ToString();
+
+    //                    }
+    //                }
+
+    //                else if (Col == 8)
+    //                {
+    //                    if (csvTable.Rows[Row][Col] != DBNull.Value)
+    //                    {
+
+    //                        e.Level = csvTable.Rows[Row][Col].ToString();
+
+    //                    }
+    //                }
+
+    //                else if (Col == 10)
+    //                {
+    //                    if (csvTable.Rows[Row][Col] != DBNull.Value)
+    //                    {
+
+    //                        e.OtElecgibility = csvTable.Rows[Row][Col].ToString();
+
+    //                    }
+    //                }
+
+
+    //                Console.Write(csvTable.Rows[Row][Col] + ",");
+
+        //            }
+
+    //            Console.WriteLine();
+    //            dbcontext.Employees.Add(e);
+
+    //        }
+
+    //        await dbcontext.SaveChangesAsync();
+    //    }
+    //    isSaving = false;
+    //    await InvokeAsync(StateHasChanged);
+
+
+
+    //}
+
+}

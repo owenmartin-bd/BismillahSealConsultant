@@ -1,0 +1,442 @@
+﻿@page "/stuffSalary"
+@using System.Globalization
+
+@if (IsPageLoading)
+{
+    <Chase></Chase>
+}
+else
+{
+    @if (logger.checkAccess("/stuffSalary", rollId))
+    {
+        <div class="container-fluid shadow" style="min-height:90vh;">
+            <div class="row">
+
+                <div class="col-3">
+                    <h5>Select a month to show generate salary</h5>
+
+                    <div class="input-group">
+
+                        <input type="month" class="form-control" @bind="selectedDate" />
+
+
+                        <button class="btn btn-primary" @onclick="show"> Show All</button>
+
+                    </div>
+                </div>
+
+                <div class="col-4">
+                    <h5>Please write the exact Emmployee code to search</h5>
+
+                    <div class="input-group">
+
+                        <input type="number" class="form-control" placeholder="Employee Code" @bind="searchString" />
+
+
+                        <button class="btn btn-secondary" @onclick="Search"> Search </button>
+
+                        <button class="btn btn-dark">
+                            <span class="oi oi-print" aria-hidden="true"></span> Print
+                        </button>
+
+                    </div>
+                </div>
+
+
+                <div class="col-5 d-flex flex-row-reverse">
+
+                    <ul class="list-group list-group-horizontal-sm" style="height:40px">
+
+
+
+
+                        <li class="list-group-item list-group-item-success">Allowance</li>
+                        <li class="list-group-item list-group-item-danger">Deductions</li>
+
+                        <li class="list-group-item list-group-item-primary">Grand total</li>
+
+                    </ul>
+
+
+                </div>
+
+            </div>
+
+
+            <br />
+
+            <div class="row m-1">
+
+                <div class="col">
+                    @if (isShowingLoading)
+                    {
+                        <Chase style="margin-left:45%; margin-top: 45vh;"></Chase>
+                    }
+                    else
+                    {
+                        <form id="printable-form">
+                            <table class="table table-responsive table-sm table-secondary">
+                                <thead>
+                                    <tr>
+                                        <th class="shadow-lg">
+                                            Employee Name
+                                        </th>
+                                        <th class="shadow-lg">
+                                            Code
+                                        </th>
+                                        <th class="shadow-lg">
+                                            Ic/PP
+                                        </th>
+                                        <th class="table-success">
+                                            Earnings
+                                        </th>
+                                        <th class="table-success" style="text-align: right;">
+                                            Total
+                                        </th>
+                                        <th class="table-danger">
+                                            Deductions
+                                        </th>
+                                        <th class="table-danger" style="text-align: right;">
+                                            Total
+                                        </th>
+                                        <th class="table-primary" style="text-align: right;">
+                                            Grand Total
+                                        </th>
+                                    </tr>
+
+
+                                </thead>
+                                <tbody>
+                                    @foreach (Employee e in employeeList)
+                                    {
+                                        <tr>
+                                            <td class="shadow-lg">
+                                                @e.FirstName&nbsp;@e.LastName
+                                            </td>
+                                            <td class="shadow-lg">
+                                                @e.EmployeeCode
+                                            </td>
+                                            <td class="shadow-lg">
+                                                @e.IcPp
+                                            </td>
+
+                                            <td>
+                                                <table class="table table-responsive table-sm shadow-lg">
+
+                                                    <tbody>
+                                                        @foreach (Payroll p in payrolls.Where(x => x.EmployeeId == e.Id))
+                                                        {
+                                                            <tr class="table-success">
+                                                                <td>@p.Name</td>
+                                                                <td style="text-align: right;">
+                                                                    @p.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                                </td>
+                                                            </tr>
+
+
+                                                        }
+                                                        @foreach (var pm in payrollByMonthStuffs.Where(x => x.EmployeeId == e.Id && x.Earning == true))
+                                                        {
+                                                            <tr class="table-success">
+                                                                <td>@pm.FieldName</td>
+                                                                <td style="text-align: right;">
+                                                                    @pm.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                                </td>
+                                                            </tr>
+                                                        }
+
+                                                    </tbody>
+
+                                                </table>
+
+
+                                            </td>
+                                            <td class="table-success shadow-lg" style="text-align: right;">
+
+                                                @* .....................................*@
+                                                @CalculateTotalEarning(e)?.ToString("F", CultureInfo.InvariantCulture)
+                                            </td>
+
+                                            <td>
+                                                <table class="table table-responsive table-sm shadow-lg">
+
+                                                    <tbody>
+                                                        @foreach (Deduction d in deductions.Where(x => x.Employeeid == e.Id))
+                                                        {
+                                                            <tr class="table-danger">
+                                                                <td>@d.Name</td>
+                                                                <td style="text-align: right;">
+                                                                    @d.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                                </td>
+                                                            </tr>
+
+
+                                                        }
+                                                        @foreach (var pm in payrollByMonthStuffs.Where(x => x.EmployeeId == e.Id && x.Earning != true))
+                                                        {
+                                                            <tr class="table-success">
+                                                                <td>@pm.FieldName</td>
+                                                                <td style="text-align: right;">
+                                                                    @pm.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                                </td>
+                                                            </tr>
+                                                        }
+
+                                                    </tbody>
+
+                                                </table>
+                                            </td>
+                                            <td class="table-danger shadow-lg" style="text-align: right;">
+                                                @* .....................................*@
+                                                @CalculateTotalDeductions(e)?.ToString("F", CultureInfo.InvariantCulture)
+                                            </td>
+                                            <td class="table-primary shadow-lg" style="text-align: right;">
+                                                <strong> @CalculateTotalSalary(e)?.ToString("F", CultureInfo.InvariantCulture)</strong>
+
+                                            </td>
+
+
+                                        </tr>
+
+
+                                    }
+                                </tbody>
+
+                            </table>
+                        </form>
+                    }
+
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+    
+}
+
+
+
+@code {
+    string searchString = string.Empty;
+
+    DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Now);
+
+    bool IsPageLoading = true;
+    bool isShowingLoading = false;
+    bool showing = false;
+
+    List<Payroll> payrolls = new List<Payroll>();
+    List<Deduction> deductions = new List<Deduction>();
+    List<Employee> employeeList = new List<Employee>();
+    List<PayrollByMonthStuff> payrollByMonthStuffs = new List<PayrollByMonthStuff>();
+
+
+
+
+
+
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsPageLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        //............add this
+        rollId = await localStorage.GetItemAsync<string>("Roll");
+        //............addthis
+        IsPageLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+
+    }
+
+
+
+
+
+    async Task show()
+    {
+        isShowingLoading = true;
+        showing = false;
+        await InvokeAsync(StateHasChanged);
+
+        var firstDayOfMonth = new DateTime(selectedDate.Year, selectedDate.Month, 1);
+        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+
+            // Payrolldeductionschema? schema = await dbcontext.Payrolldeductionschemas.FirstOrDefaultAsync(x => x.SinceDate <= selectedDate && (x.EndDate >= selectedDate || x.EndDate == null));
+
+            var schemas = dbcontext.Payrolldeductionschemas.Where(x => x.SinceDate <= selectedDate && (x.EndDate >= selectedDate || x.EndDate == null));
+
+
+
+            if (schemas != null)
+            {
+                payrolls = await dbcontext.Payrolls.Where(x => schemas.Any(y => y.Id == x.SchemaId)).OrderBy(x => x.Type).ToListAsync();
+                deductions = await dbcontext.Deductions.Where(x => schemas.Any(y => y.Id == x.SchemaId)).OrderBy(x => x.Type).ToListAsync();
+            }
+            else
+            {
+                payrolls = null;
+                deductions = null;
+
+            }
+
+
+
+            employeeList = await dbcontext.Employees.Where(x => x.Level == "Staff").OrderByDescending(x => x.Active).ThenBy(x => x.FirstName).ToListAsync();
+
+            payrollByMonthStuffs = await dbcontext.PayrollByMonthStuffs.Where(x => x.Month.Value.Month == selectedDate.Month).ToListAsync();
+        }
+
+        searchString = string.Empty;
+        isShowingLoading = false;
+        showing = true;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+
+
+    async Task Search()
+    {
+        isShowingLoading = true;
+        showing = false;
+        await InvokeAsync(StateHasChanged);
+
+        var firstDayOfMonth = new DateTime(selectedDate.Year, selectedDate.Month, 1);
+        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            var schemas = dbcontext.Payrolldeductionschemas.Where(x => x.SinceDate <= selectedDate && (x.EndDate >= selectedDate || x.EndDate == null));
+
+
+
+            if (schemas != null)
+            {
+                payrolls = await dbcontext.Payrolls.Where(x => schemas.Any(y => y.Id == x.SchemaId)).OrderBy(x => x.Type).ToListAsync();
+                deductions = await dbcontext.Deductions.Where(x => schemas.Any(y => y.Id == x.SchemaId)).OrderBy(x => x.Type).ToListAsync();
+            }
+            else
+            {
+                payrolls = null;
+                deductions = null;
+
+            }
+
+
+            employeeList = await dbcontext.Employees.Where(x => x.Level == "Staff" && x.EmployeeCode == searchString).OrderByDescending(x => x.Active).ThenBy(x => x.FirstName).ToListAsync();
+            payrollByMonthStuffs = await dbcontext.PayrollByMonthStuffs.Where(x => x.Month.Value.Month == selectedDate.Month).ToListAsync();
+        }
+
+        searchString = string.Empty;
+        isShowingLoading = false;
+        showing = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    double? CalculateTotalEarning(Employee e)
+    {
+        double? total = payrolls.Where(x => x.EmployeeId == e.Id).Select(x => x.Amount).Sum(); //.ToString("F", CultureInfo.InvariantCulture);
+
+        foreach (var pm in payrollByMonthStuffs.Where(x => x.EmployeeId == e.Id && x.Earning == true))
+        {
+            total = total + pm.Amount;
+        }
+
+        return total;
+    }
+
+    double? CalculateTotalDeductions(Employee e)
+    {
+        double? total = deductions.Where(x => x.Employeeid == e.Id).Select(x => x.Amount).Sum();//?.ToString("F", CultureInfo.InvariantCulture)
+
+        foreach (var pm in payrollByMonthStuffs.Where(x => x.EmployeeId == e.Id && x.Earning != true))
+        {
+            total = total - pm.Amount;
+        }
+
+        return total;
+    }
+
+
+    double? CalculateTotalSalary(Employee e)
+    {
+        double? total = 0;
+
+        var payrollsRelated = payrolls.Where(x => x.EmployeeId == e.Id).ToList();
+        var deductionsRelated = deductions.Where(x => x.Employeeid == e.Id).ToList();
+
+        foreach (var p in payrollsRelated)
+        {
+            if (p.Amount != null)
+            {
+                total = total + p.Amount;
+            }
+            else if (p.Percentage != null)
+            {
+
+                total = total + calculateaPAmount(payrollsRelated.FirstOrDefault(x => x.Id == p.ReletedPayrollId).Amount, p.Percentage);
+            }
+
+
+        }
+
+        foreach (var pm in payrollByMonthStuffs.Where(x => x.EmployeeId == e.Id && x.Earning == true))
+        {
+            total = total + pm.Amount;
+        }
+
+
+
+        foreach (var p in deductionsRelated)
+        {
+            if (p.Amount != null)
+            {
+                total = total - p.Amount;
+            }
+            else if (p.Percentage != null)
+            {
+
+                total = total - calculateaPAmount(payrollsRelated.FirstOrDefault(x => x.Id == p.ReferencePaymentId).Amount, p.Percentage);
+            }
+
+
+        }
+        foreach (var pm in payrollByMonthStuffs.Where(x => x.EmployeeId == e.Id && x.Earning != true))
+        {
+            total = total - pm.Amount;
+        }
+
+
+        return total;
+    }
+
+    protected double? calculateaPAmount(double? mainAmount, double? percentage)
+    {
+        return (percentage / 100) * mainAmount;
+    }
+
+}

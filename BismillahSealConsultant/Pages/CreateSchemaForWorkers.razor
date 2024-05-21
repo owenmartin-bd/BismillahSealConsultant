@@ -1,0 +1,493 @@
+﻿@page "/AttendanceRules"
+<div class="container-fluid">
+    <div class="row">
+
+        <div class="col-md-2">
+        
+            <h5>List of all Rules</h5>
+
+            @if (workingHourRuleSchemas != null)
+            {
+                <ol class="list-group">
+
+
+                    @foreach (var r in workingHourRuleSchemas)
+                    {
+
+                        <li class="list-group-item" @onclick="()=>getSchema(r)" >
+                            <div class="btn-group" role="group" aria-label="Basic example">
+                                <button type="button" class="btn btn-secondary">@r.RuleName</button>
+
+                                @if (SelectedSchema == r && isFacingData)
+                                {
+                                    <button class="btn">
+                                        <div class="spinner-border" role="status">
+                                            <span class="sr-only"></span>
+                                        </div>
+
+                                    </button>
+                                  
+
+                                }
+
+                            </div>  
+
+                           
+
+
+                        </li>
+
+
+
+                    }
+                </ol>
+            }
+
+        </div>
+        <div class="col-md-10">
+            <div class="container-fluid">
+                <div class="row">
+
+                    <div class="col-5">
+                        @if(SelectedSchema != null)
+                        {
+                           <h3>
+                               Details of the @SelectedSchema.RuleName <btn class="btn btn-close" @onclick="reset" ></btn>
+                            </h3>
+                        }
+                        else
+                        {
+                            <h3>
+                                New Hour rule
+                            </h3>
+                        }
+                      
+                    </div>
+                </div>
+                <hr />
+                <div class="row">
+
+
+                    <div class="col-5">
+                        <label>Name of the rule</label>
+
+                        <input class="form-control" @bind="workingHourRuleSchema.RuleName" placeholder="Please enter rule name" />
+
+                        <div class="p-3">
+
+                            @if (is_saving)
+                            {
+                                <div class="spinner-border" role="status">
+                                    <span class="sr-only"></span>
+                                </div>
+                            }
+                            else
+                            {
+                                <button class="btn btn-success" @onclick="save">Save</button>
+
+                                <br />
+                                <strong>Do Not click this button before creating the schema </strong>
+                            }
+
+                        </div>
+                    </div>
+
+
+
+                </div>
+
+                <hr />
+                <div class="row">
+                    <h4>Over time</h4>
+                    <div class="row">
+
+
+
+                        <div class="col-md-4">
+                            <label>Minimum Hours for Over time after</label>
+
+
+                            <div class="input-group">
+                                <input type="text" @bind="overtimeWorkingHour.StartAfter" class="form-control" placeholder="HH:MM" />
+                            </div>
+
+                            <label> Over time 1 hour is equal to </label>
+
+
+                            <div class="input-group">
+                                <input type="text" @bind="overtimeWorkingHour.IcreamentCount" class="form-control" placeholder="HH:MM" />
+                            </div>
+
+
+                        </div>
+
+
+
+                    </div>
+
+                </div>
+                <hr />
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5> Break Times</h5>
+
+
+                        <div class="input-group">
+                            <span class="input-group-text" id="basic-addon2">From</span>
+                            <input class="form-control" @bind=breakTime.StartTime type="time">
+                            <span class="input-group-text" id="basic-addon2">To</span>
+                            <input class="form-control" @bind=breakTime.EndTime type="time">
+                            <button class="btn" @onclick="()=>{breakTimes.Add(breakTime); breakTime = new BreakTime{BreakTimeId = Guid.NewGuid()};}">ADD</button>
+                        </div>
+
+
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        From
+                                    </th>
+                                    <th>
+                                        To
+                                    </th>
+                                    <th>
+
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var b in breakTimes)
+                                {
+                                    <tr>
+                                        <td>
+                                            @b.StartTime
+                                        </td>
+                                        <td>
+                                            @b.EndTime
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-close btn-danger" @onclick="()=> breakTimes.Remove(b) " ></button>
+                                        </td>
+                                    </tr>
+
+                                }
+                            </tbody>
+
+                        </table>
+                    </div>
+                </div>
+                <hr />
+                <div class="row">
+
+
+                    <div class="col-md-6" style="height:40vh; overflow-y:auto" >
+                        <h5>Entry Time</h5>
+                        <table class="table table-responsive table-striped">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Entry Slot Start
+                                    </th>
+                                    <th>
+                                        Entry Slot End
+                                    </th>
+                                    <th>
+                                        Time Taken
+                                    </th>
+                                    <th>
+
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ts in EntryTimeslots.OrderBy(x=>x.TakenTime))
+                                {
+                                    <tr>
+                                        <td>
+                                            <input class="form-control" type="time" @bind=ts.StartTine disabled />
+                                        </td>
+                                        <td>
+                                            <input class="form-control" type="time" @bind=ts.EndTime disabled />
+                                        </td>
+                                        <td>
+                                            <input class="form-control" type="time" @bind=ts.TakenTime disabled />
+                                        </td>
+                                        <td>
+                                            <button class="btn" @onclick="()=>{EntryTimeslots.Remove(ts);}"> <span class="oi oi-minus"></span></button>
+                                        </td>
+                                    </tr>
+                                }
+
+
+                                <tr>
+                                    <td>
+                                        <input class="form-control" type="time" @bind=tEntry.StartTine />
+                                    </td>
+                                    <td>
+                                        <input class="form-control" type="time" @bind=tEntry.EndTime />
+                                    </td>
+                                    <td>
+                                        <input class="form-control" type="time" @bind=tEntry.TakenTime />
+                                    </td>
+                                    <td>
+                                        <button class="btn" @onclick="()=>{ EntryTimeslots.Add(tEntry); tEntry = new EntryTime{Id = Guid.NewGuid()};}"> <span class="oi oi-plus"></span></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                    </div>
+
+                    <div class="col-md-6" style="height:40vh; overflow-y:auto">
+                        <h5>Exit Time</h5>
+                        <table class="table table-responsive table-striped">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Exit Slot Start
+                                    </th>
+                                    <th>
+                                        Exit Slot End
+                                    </th>
+                                    <th>
+                                        Time Taken
+                                    </th>
+                                    <th>
+
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ts in ExitTimeslots.OrderBy(x=>x.TakenTime))
+                                {
+                                    <tr>
+                                        <td>
+                                            <input class="form-control" type="time" @bind=ts.StartTine disabled />
+                                        </td>
+                                        <td>
+                                            <input class="form-control" type="time" @bind=ts.EndTime disabled />
+                                        </td>
+                                        <td>
+                                            <input class="form-control" type="time" @bind=ts.StartTine disabled />
+                                        </td>
+                                        <td>
+                                            <button class="btn" @onclick="()=>{ExitTimeslots.Remove(ts);}"> <span class="oi oi-minus"></span></button>
+                                        </td>
+                                    </tr>
+                                }
+
+
+                                <tr>
+                                    <td>
+                                        <input class="form-control" type="time" @bind=tExit.StartTine />
+                                    </td>
+                                    <td>
+                                        <input class="form-control" type="time" @bind=tExit.EndTime />
+                                    </td>
+                                    <td>
+                                        <input class="form-control" type="time" @bind=tExit.TakenTime />
+                                    </td>
+                                    <td>
+                                        <button class="btn" @onclick="()=>{ ExitTimeslots.Add(tExit); tExit = new ExitTime{Id = Guid.NewGuid()};}"> <span class="oi oi-plus"></span></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+
+
+
+@code {
+
+    bool is_saving = false;
+
+    WorkingHourRuleSchema workingHourRuleSchema = new WorkingHourRuleSchema
+        {
+            SchemaId = Guid.NewGuid()
+        };
+
+
+
+    EntryTime tEntry = new EntryTime
+        {
+            Id = Guid.NewGuid()
+        };
+    ExitTime tExit = new ExitTime
+        {
+            Id = Guid.NewGuid()
+        };
+
+    OvertimeWorkingHour overtimeWorkingHour = new OvertimeWorkingHour
+        {
+            OverTimeId = Guid.NewGuid()
+        };
+
+    BreakTime breakTime = new BreakTime()
+        {
+            BreakTimeId = Guid.NewGuid()
+        };
+
+    List<EntryTime> EntryTimeslots = new List<EntryTime>();
+    List<ExitTime> ExitTimeslots = new List<ExitTime>();
+    List<BreakTime> breakTimes = new List<BreakTime>();
+
+    List<WorkingHourRuleSchema>? workingHourRuleSchemas;
+
+    WorkingHourRuleSchema? SelectedSchema;
+
+    bool isFacingData = false;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            workingHourRuleSchemas = await dbcontext.WorkingHourRuleSchemas.ToListAsync();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task save()
+    {
+
+        is_saving = true;
+
+        await InvokeAsync(StateHasChanged);
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            workingHourRuleSchema.CreatedAt = DateTime.Now;
+
+            dbcontext.WorkingHourRuleSchemas.Add(workingHourRuleSchema);
+
+            EntryTimeslots.ForEach(x => x.SchemaId = workingHourRuleSchema.SchemaId);
+
+            dbcontext.EntryTimes.AddRange(EntryTimeslots);
+
+            ExitTimeslots.ForEach(x => x.SchemaId = workingHourRuleSchema.SchemaId);
+
+            dbcontext.ExitTimes.AddRange(ExitTimeslots);
+
+            overtimeWorkingHour.SchemaId = workingHourRuleSchema.SchemaId;
+
+            dbcontext.OvertimeWorkingHours.Add(overtimeWorkingHour);
+
+            breakTimes.ForEach(x => x.SchemaId = workingHourRuleSchema.SchemaId);
+
+            dbcontext.BreakTimes.AddRange(breakTimes);
+
+            await dbcontext.SaveChangesAsync();
+
+            workingHourRuleSchemas = await dbcontext.WorkingHourRuleSchemas.ToListAsync();
+        }
+
+        is_saving = false;
+        workingHourRuleSchema = new WorkingHourRuleSchema
+            {
+                SchemaId = Guid.NewGuid()
+            };
+
+
+
+        tEntry = new EntryTime
+            {
+                Id = Guid.NewGuid()
+            };
+        tExit = new ExitTime
+            {
+                Id = Guid.NewGuid()
+            };
+
+        overtimeWorkingHour = new OvertimeWorkingHour
+            {
+                OverTimeId = Guid.NewGuid()
+            };
+
+        breakTime = new BreakTime()
+            {
+                BreakTimeId = Guid.NewGuid()
+            };
+
+        EntryTimeslots = new List<EntryTime>();
+        ExitTimeslots = new List<ExitTime>();
+        breakTimes = new List<BreakTime>();
+
+
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    async Task getSchema(WorkingHourRuleSchema? Schema)
+    {
+
+        SelectedSchema = Schema;
+
+        workingHourRuleSchema = Schema;
+
+        isFacingData = true;
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            EntryTimeslots = await dbcontext.EntryTimes.Where(x => x.SchemaId == SelectedSchema.SchemaId).ToListAsync();
+            ExitTimeslots = await dbcontext.ExitTimes.Where(x => x.SchemaId == SelectedSchema.SchemaId).ToListAsync();
+            breakTimes = await dbcontext.BreakTimes.Where(x => x.SchemaId == SelectedSchema.SchemaId).ToListAsync();
+            overtimeWorkingHour = await dbcontext.OvertimeWorkingHours.FirstOrDefaultAsync(x => x.SchemaId == SelectedSchema.SchemaId);
+            await InvokeAsync(StateHasChanged);
+
+
+        }
+        isFacingData = false;
+
+    }
+
+    void reset()
+    {
+        SelectedSchema = null;
+        workingHourRuleSchema = new WorkingHourRuleSchema
+            {
+                SchemaId = Guid.NewGuid()
+            };
+
+
+
+        tEntry = new EntryTime
+            {
+                Id = Guid.NewGuid()
+            };
+        tExit = new ExitTime
+            {
+                Id = Guid.NewGuid()
+            };
+
+        overtimeWorkingHour = new OvertimeWorkingHour
+            {
+                OverTimeId = Guid.NewGuid()
+            };
+
+        breakTime = new BreakTime()
+            {
+                BreakTimeId = Guid.NewGuid()
+            };
+
+        EntryTimeslots = new List<EntryTime>();
+        ExitTimeslots = new List<ExitTime>();
+        breakTimes = new List<BreakTime>();
+    }
+
+}

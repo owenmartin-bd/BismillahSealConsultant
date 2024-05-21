@@ -1,0 +1,409 @@
+﻿@page "/leave"
+@using BlazorCalendar
+@using BlazorCalendar.Models
+
+
+@if (userListloading)
+{
+    <Chase size="100" style="margin-left:45%; margin-top: 45vh;"></Chase>
+}
+else
+{
+
+    @if (logger.checkAccess("/leave", rollId))
+    {
+        <div class="container-fluid shadow">
+            <div class="row">
+                <div class="col-2 employee-list employe-list-scroll" style="max-height:100vh;overflow-y:scroll">
+
+                    <div class="container-fluid employee-list-2">
+
+                        <div class="row">
+                            <div class="col-12" style="margin-left:0px; margin-bottom:10px;margin-top:10px">
+
+                                <input class="form-control" type="text" @oninput="@((ChangeEventArgs __e) =>searchEmployee( __e?.Value?.ToString()))" placeholder="Search Employees" />
+
+
+                            </div>
+                        </div>
+
+
+                        <div class="row">
+                            <div class="col-12">
+                                <ul class="list-group list-group-flush">
+
+
+                                    @foreach (Employee e in employeeListSearched)
+                                    {
+
+                                        @if (selectedEmployee != null && selectedEmployee.Id == e.Id)
+                                        {
+                                            <li class="list-group-item rounded-3" @onclick="()=> selectEmployee(e.Id)" style="background-color:#0D7C82; margin:2px">
+
+                                                <div class="d-flex text-white rounded-3" style="padding:5px ">
+
+                                                    @* <img src="Photos/@e.Photo" class="rounded img-thumbnail" style="height:20px; width:20px; " alt="">*@
+
+
+
+                                                    Name- @e.FirstName&nbsp;@e.LastName <br> Ic/Passport- @e.IcPp  <br>Code- @e.EmployeeCode
+                                                </div>
+
+                                            </li>
+
+                                        }
+                                        else
+                                        {
+
+
+
+                                            <li class="list-group-item rounded-3" @onclick="()=> selectEmployee(e.Id)" style="background-color:#17A2B8; margin:2px">
+
+                                                <div class="d-flex text-white rounded-3" style="padding:5px; ">
+
+                                                    @* <img src="Photos/@e.Photo" class="rounded img-thumbnail" style="height:20px; width:20px; " alt="">*@
+
+
+
+                                                    Name- @e.FirstName&nbsp;@e.LastName <br> Ic/Passport- @e.IcPp  <br>Code- @e.EmployeeCode
+                                                </div>
+
+                                            </li>
+
+                                        }
+
+
+                                    }
+
+
+
+                                </ul>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+                <div class="col-10">
+                    <div class="container-fluid">
+                        <div class="row rounded bg-opacity-75 bg-gradient" style="padding-top:5px">
+
+                            <div class="col-2">
+
+
+                                <label class="text-white">Leave Start</label>
+                                <input type="date" class="form-control" @bind="l.StartDate">
+
+
+                            </div>
+
+                            <div class="col-2">
+
+
+
+                                <label class="text-white">Leave End</label>
+                                <input type="date" class="form-control" @bind="l.EndDate">
+
+                            </div>
+
+                            <div class="col-2">
+
+
+                                <label class="text-white">Type</label>
+                                <select class="form-select form-select" @bind="l.Type">
+                                    <option selected disabled>Select leave type</option>
+
+                                    <option value="Privilege Leave">Privilege Leave</option>
+                                    <option value="Casual Leave">Casual Leave </option>
+                                    <option value="Sick Leave">Sick Leave</option>
+                                    <option value="Maternity Leave">Maternity Leave</option>
+                                    <option value="Compensatory Off">Compensatory Off</option>
+                                    <option value="Marriage Leave">Marriage Leave</option>
+                                    <option value="Paternity Leave">Paternity Leave</option>
+                                    <option value="Bereavement Leave">Bereavement Leave</option>
+                                    <option value="Leave Without Pay">Leave Without Pay</option>
+                                    <option value="Other">Other</option>
+                                </select>
+
+
+                            </div>
+                            <div class="col-5">
+
+                                <label class="text-white">Reason for leave</label>
+                                <textarea class="form-control" rows="1" @bind="l.Reason"></textarea>
+
+                            </div>
+                            <div class="col-1">
+                                @if (saving)
+                                {
+                                    <Chase Size="50px" Color="azure" style="margin-top:23px"></Chase>
+                                }
+                                else
+                                {
+                                    <button class="btn text-black" style="background:azure; margin-top:23px" @onclick="saveLeave">Save</button>
+                                }
+
+
+                            </div>
+
+                        </div>
+                        <hr />
+                        <div class="row">
+                            <div class="col-12">
+                                <CalendarContainer FirstDate="CalenderStartDate" TasksList="TasksList.ToArray()" DisplayedView="DisplayedView.Annual">
+                                    <AnnualView Months="months" Style="height:80vh"
+                                        PriorityDisplay="@PriorityDisplay"
+                                        HeaderClick="HeaderClick"
+                                        TaskClick="TaskClick" EmptyDayClick="EmptyDayClick"
+                                        Draggable="@draggable" DragStart="DragStart" DropTask="DropTask" />
+                                </CalendarContainer>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+
+   
+
+}
+@code {
+    List<Employee> employeeList = new List<Employee>();
+
+    List<Employee> employeeListSearched = new List<Employee>();
+
+    private List<Tasks> TasksList = new List<Tasks>();
+    bool userListloading = true;
+    private DateTime today = DateTime.Today;
+    bool saving = false;
+
+    Employee selectedEmployee = null;
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+
+    Leaf l = new Leaf();
+
+    private DateTime CalenderStartDate;
+    private int months = 12;
+
+
+    private BlazorCalendar.PriorityLabel PriorityDisplay = PriorityLabel.Code;
+    private bool draggable = false;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        userListloading = true;
+        await InvokeAsync(StateHasChanged);
+        rollId = await localStorage.GetItemAsync<string>("Roll");
+
+        l.StartDate = DateTime.Today;
+        l.EndDate = DateTime.Today;
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            CalenderStartDate = DateTime.Parse($"1/1/{DateTime.Today.Year}");
+
+            employeeList = await dbcontext.Employees.Where(x => x.Level == "Staff" && x.Active == true).OrderBy(x => x.FirstName).ToListAsync();
+
+            employeeListSearched = employeeList;
+        }
+
+
+        userListloading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    void searchEmployee(string? text)
+    {
+        Console.WriteLine(text);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            if (text != null)
+            {
+
+
+                employeeListSearched = employeeList.Where(x =>
+
+                (x.FirstName != null &&
+                x.LastName != null &&
+                x.EmployeeCode != null &&
+                x.IcPp != null) &&
+
+
+                (x.FirstName.ToLower().Contains(text.ToLower()) ||
+                x.LastName.ToLower().Contains(text.ToLower()) ||
+
+                x.IcPp.ToLower().Contains(text.ToLower()) ||
+
+                x.EmployeeCode.ToLower().Contains(text.ToLower()))
+
+                ).ToList();
+
+                StateHasChanged();
+
+            }
+
+
+
+
+        }
+
+
+    }
+
+    async Task selectEmployee(Guid id)
+    {
+        selectedEmployee = employeeList.FirstOrDefault(x => x.Id == id);
+
+
+
+        if (selectedEmployee != null)
+        {
+            var taskListLoc = new List<Tasks>();
+            using (sealConsultantContext dbcontext = new sealConsultantContext())
+            {
+                var leaves = dbcontext.Leaves.Where(x => x.EmployeeId == selectedEmployee.Id);
+
+
+
+                int x = 0;
+                foreach (var v in leaves)
+                {
+                    if (v.Type == "Privilege Leave")
+                    {
+                        taskListLoc.Add(new Tasks { ID = x, DateStart = v.StartDate, DateEnd = v.EndDate, Code = v.Type, Color = "#2596be", Caption = v.Reason, FillStyle = FillStyleEnum.BackwardDiagonal });
+                    }
+                    else if (v.Type == "Casual Leave")
+                    {
+                        taskListLoc.Add(new Tasks { ID = x, DateStart = v.StartDate, DateEnd = v.EndDate, Code = v.Type, Color = "#e28743", Caption = v.Reason, FillStyle = FillStyleEnum.BackwardDiagonal });
+                    }
+                    else if (v.Type == "Sick Leave")
+                    {
+                        taskListLoc.Add(new Tasks { ID = x, DateStart = v.StartDate, DateEnd = v.EndDate, Code = v.Type, Color = "#F7B2C8", Caption = v.Reason, FillStyle = FillStyleEnum.BackwardDiagonal });
+                    }
+                    else if (v.Type == "Maternity Leave")
+                    {
+                        taskListLoc.Add(new Tasks { ID = x, DateStart = v.StartDate, DateEnd = v.EndDate, Code = v.Type, Color = "#325959", Caption = v.Reason, FillStyle = FillStyleEnum.BackwardDiagonal });
+                    }
+                    else if (v.Type == "Compensatory Off")
+                    {
+                        taskListLoc.Add(new Tasks { ID = x, DateStart = v.StartDate, DateEnd = v.EndDate, Code = v.Type, Color = "#FF00FF", Caption = v.Reason, FillStyle = FillStyleEnum.BackwardDiagonal });
+                    }
+                    else if (v.Type == "Marriage Leave")
+                    {
+                        taskListLoc.Add(new Tasks { ID = x, DateStart = v.StartDate, DateEnd = v.EndDate, Code = v.Type, Color = "#FF0000", Caption = v.Reason, FillStyle = FillStyleEnum.BackwardDiagonal });
+                    }
+                    else if (v.Type == "Paternity Leave")
+                    {
+                        taskListLoc.Add(new Tasks { ID = x, DateStart = v.StartDate, DateEnd = v.EndDate, Code = v.Type, Color = "#808000", Caption = v.Reason, FillStyle = FillStyleEnum.BackwardDiagonal });
+                    }
+                    else if (v.Type == "Bereavement Leave")
+                    {
+                        taskListLoc.Add(new Tasks { ID = x, DateStart = v.StartDate, DateEnd = v.EndDate, Code = v.Type, Color = "#C0C0C0", Caption = v.Reason, FillStyle = FillStyleEnum.BackwardDiagonal });
+                    }
+                    else if (v.Type == "Leave Without Pay")
+                    {
+                        taskListLoc.Add(new Tasks { ID = x, DateStart = v.StartDate, DateEnd = v.EndDate, Code = v.Type, Color = "#800000", Caption = v.Reason, FillStyle = FillStyleEnum.BackwardDiagonal });
+                    }
+                    else if (v.Type == "Leave Without Pay")
+                    {
+                        taskListLoc.Add(new Tasks { ID = x, DateStart = v.StartDate, DateEnd = v.EndDate, Code = v.Type, Color = "#00FFFF", Caption = v.Reason, FillStyle = FillStyleEnum.BackwardDiagonal });
+                    }
+                    else if (v.Type == "Other")
+                    {
+                        taskListLoc.Add(new Tasks { ID = x, DateStart = v.StartDate, DateEnd = v.EndDate, Code = v.Type, Color = "#00FFF0", Caption = v.Reason, FillStyle = FillStyleEnum.BackwardDiagonal });
+                    }
+
+
+                    x++;
+                }
+
+
+            }
+
+            TasksList = taskListLoc;
+
+            await InvokeAsync(StateHasChanged);
+
+        }
+
+
+    }
+    async Task saveLeave()
+    {
+        saving = true;
+        await InvokeAsync(StateHasChanged);
+
+        Logger logger = new Logger();
+        string rollId = string.Empty;
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            if (selectedEmployee != null)
+            {
+                l.Id = Guid.NewGuid();
+                l.EmployeeId = selectedEmployee.Id;
+
+                dbcontext.Leaves.Add(l);
+                await dbcontext.SaveChangesAsync();
+            }
+
+
+
+        }
+        await selectEmployee(l.EmployeeId);
+        l = new Leaf();
+        saving = false;
+        l.StartDate = DateTime.Today;
+        l.EndDate = DateTime.Today;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void HeaderClick(DateTime month)
+    {
+        //  fakeConsole = "HeaderClick :" + month.ToString("MMM yyyy");
+    }
+    private void TaskClick(ClickTaskParameter clickTaskParameter)
+    {
+        //  fakeConsole = "ID task(s) :" + string.Join(", ", clickTaskParameter.IDList);
+    }
+    private void EmptyDayClick(ClickEmptyDayParameter clickEmptyDayParameter)
+    {
+        //  fakeConsole = "Empty day :" + clickEmptyDayParameter.Day.ToShortDateString();
+    }
+    private void DragStart(DragDropParameter dragDropParameter)
+    {
+        //  fakeConsole = $"DragStart event :{dragDropParameter.Day.ToShortDateString()} {dragDropParameter.taskID}";
+    }
+
+    private void DropTask(DragDropParameter dragDropParameter)
+    {
+        //fakeConsole = $"DropTask event :{dragDropParameter.Day.ToShortDateString()} {dragDropParameter.taskID}";
+
+        //Tasks taskDropped = TasksList.FirstOrDefault(t => t.ID == dragDropParameter.taskID);
+
+        //var TotalDay = (taskDropped.DateEnd - taskDropped.DateStart).TotalDays;
+        //taskDropped.DateEnd = dragDropParameter.Day.AddDays(TotalDay);
+        //taskDropped.DateStart = dragDropParameter.Day;
+    }
+}

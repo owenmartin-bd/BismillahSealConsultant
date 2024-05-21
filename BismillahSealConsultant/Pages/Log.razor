@@ -1,0 +1,62 @@
+﻿@page "/log"
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <table class="table table-secondary">
+                <thead>
+                    <tr>
+                        <th>
+                            Item
+                        </th>
+                        <th>
+                            Date & Time
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(var lo in logs)
+                    {
+                        <tr>
+                            <td>
+                                @lo.Item
+                            </td>
+                            <td>
+                                @lo.DateTime
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+</div>
+
+
+@code {
+    bool loading = false;
+    List<DataModels.Log> logs = new List<DataModels.Log>();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+            logs = await dbcontext.Logs.ToListAsync();
+
+
+
+        }
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+}

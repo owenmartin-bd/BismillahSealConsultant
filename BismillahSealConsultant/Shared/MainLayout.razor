@@ -1,0 +1,66 @@
+﻿@inherits LayoutComponentBase
+
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+@inject NavigationManager nav
+
+
+
+<PageTitle>SealConsultant</PageTitle>
+
+
+<div class="page">
+
+    @if (loggedin)
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+
+    }
+
+   
+
+    <main>
+        <div class="top-row px-4">
+      
+            <button class="btn text-white" @onclick="@(()=>nav.NavigateTo("/MyDetails"))"><span class="iconify " data-icon="carbon:user-profile" aria-hidden="true"></span> </button>
+
+        </div>
+
+        <article class="content px-4">
+            @if (!loggedin)
+            {
+                <Login></Login>
+                
+            }else
+            {
+                @Body
+            }
+
+        </article>
+    </main>
+</div>
+
+
+@code {
+    bool loggedin = false;
+
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var login = await localStorage.GetItemAsync<string>("LoggegIn");
+
+        if (login == "True")
+        {
+            loggedin = true;
+
+           
+
+            await InvokeAsync(StateHasChanged);
+        }
+
+    }
+
+}

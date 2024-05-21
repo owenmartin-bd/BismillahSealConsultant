@@ -1,0 +1,257 @@
+﻿@inject NavigationManager nav
+@if (loading)
+{
+    <Chase Size="100px" style="margin-left:45%; margin-top: 45vh;"></Chase>
+}
+else
+{
+
+    <div class="container-fluid shadow">
+        
+        <div class="row">
+            <div class="col-2 bg-opacity-75 bg-gradient" style="padding-top:10px; padding-bottom:10px; background: linear-gradient(to right, #8e9eab, #eef2f3);">
+
+                <div class="accordion" id="accordionExample">
+                    <div class="accordion-item">
+                        <h6 class="accordion-header" id="flush-headingOne">
+                            <button class="accordion-button collapsed btn-sm" @onclick="()=>{
+
+                                if(enableSortBySkill){
+                                    enableSortBySkill = false;
+                                }else{
+                                    WorkerReqListSearched = WorkerReqList;
+                                    enableSortBySkill = true;
+                                }
+
+
+
+
+                                }" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOne" aria-expanded="false" aria-controls="flush-collapseOne">
+                                Select Skills
+                            </button>
+                        </h6>
+
+
+                        <div id="flush-collapseOne" class="accordion-collapse collapse" style="padding:8px" aria-labelledby="flush-headingOne" data-bs-parent="#accordionFlushExample">
+
+                            <ul class="list-group bg-dark text-white">
+
+                                @foreach (Skill s in Skills)
+                                {
+                                    <li class="list-group-item" @onclick="()=>{
+
+                                        WorkerReqListSearched = WorkerReqList.Where(x=> workerReqSkills.Any(q=>q.SkillId == s.SkillId &&  q.WorkerReqId == x.Id) ).OrderBy(x=>x.FirstName).ToList();
+
+                                    }">@s.SkillName</li>
+                                }
+
+
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+            <div class="col-10">
+                <div class="row">
+                    <div class="col-12 bg-opacity-75 bg-gradient" style="padding-top:10px; padding-bottom:10px; background-color:beige">
+                        <Animate Animation="Animations.ZoomIn" Duration="TimeSpan.FromSeconds(0.5)" Delay="TimeSpan.FromSeconds(0)">
+                            <input class="form-control" type="text" @oninput="@((ChangeEventArgs __e) =>searchEmployee( __e?.Value?.ToString()) )" placeholder="Search Employees" />
+                        </Animate>
+
+                    </div>
+                </div>
+
+                <div class="row" style="padding:10px; margin-top:10px">
+                    <div class="col-12" style="overflow-y:auto; height:80vh">
+                        <Animate Animation="Animations.SlideUp" Duration="TimeSpan.FromSeconds(1)" Delay="TimeSpan.FromSeconds(0)">
+                            <table class="table table-dark table-responsive table-striped table-hover employee-list">
+                                <thead class="sticky-top">
+                                    <tr>
+
+                                        <th>
+                                            Photo
+                                        </th>
+
+                                        <th @onclick="()=>{WorkerReqListSearched= WorkerReqList.OrderBy(x=>x.FirstName).ToList();}">
+                                            Name
+                                        </th>
+                                        <th @onclick="()=>{WorkerReqListSearched= WorkerReqList.OrderBy(x=>x.IcPp).ToList();}">
+                                            Passport
+                                        </th>
+
+
+                                        <th @onclick="()=>{WorkerReqListSearched= WorkerReqList.OrderBy(x=>x.Phone).ToList();}">
+                                            Phone
+                                        </th>
+                                        <th>
+                                            DOB
+                                        </th>
+
+                                        <th>
+                                            Nationality
+                                        </th>
+                                        <th>
+                                            Passpost Exp
+                                        </th>
+                                        <th>
+                                            Address
+                                        </th>
+                                        <th>
+                                            Skills
+                                        </th>
+
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var e in WorkerReqListSearched)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <img src="Photos/@e.Photo" class="rounded img-thumbnail" style="height:160px; width:100px">
+                                            </td>
+                                            <td>
+                                                @e.FirstName&nbsp;@e.LastName
+                                            </td>
+
+
+                                            <td>
+                                                @e.IcPp
+                                            </td>
+                                            <td>
+                                                @e.Phone
+                                            </td>
+                                            <td>
+                                                @e.Dob
+                                            </td>
+                                            <td>
+                                                @e.Nationality
+                                            </td>
+                                            <td>
+                                                @e.PassExp
+                                            </td>
+                                            <td>
+                                                <strong><u> Present </u></strong><p>@e.CurrentAddress </p>
+                                                <strong> <u> Permanant </u></strong><p>@e.PemanantAddress </p>
+                                            </td>
+                                            <td>
+                                                <table class="table table-primary table-responsive text-white table-bordered">
+                                                    @foreach (var Skill in workerReqSkills.Where(x => x.WorkerReqId == e.Id))
+                                                    {
+                                                        <tr>
+                                                            <td>@Skills.FirstOrDefault(x=>x.SkillId == Skill.SkillId).SkillName</td>
+                                                        </tr>
+                                                    }
+                                                </table>
+
+                                            </td>
+
+
+                                        </tr>
+                                    }
+
+                                </tbody>
+                            </table>
+                        </Animate>
+
+
+                    </div>
+                </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            </div>
+
+
+        </div>
+
+     
+
+
+       
+
+    </div>
+}
+
+
+
+
+@code {
+    List<WorkerReq> WorkerReqList = new List<WorkerReq>();
+    List<WorkerReq> WorkerReqListSearched = new List<WorkerReq>();
+    List<Skill> Skills = new List<Skill>();
+    List<WorkerReqSkill> workerReqSkills = new List<WorkerReqSkill>();
+    bool loading = false;
+
+    bool enableSortBySkill = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+            WorkerReqList = await dbcontext.WorkerReqs.OrderBy(x => x.FirstName).ToListAsync();
+            Skills = await dbcontext.Skills.ToListAsync();
+            workerReqSkills = await dbcontext.WorkerReqSkills.ToListAsync();
+            WorkerReqListSearched = WorkerReqList;
+
+
+        }
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+    void searchEmployee(string? text)
+    {
+        Console.WriteLine(text);
+
+
+        if (text != null)
+        {
+
+
+            WorkerReqListSearched = WorkerReqList.Where(x =>
+
+            (x.FirstName != null &&
+            x.LastName != null &&
+            x.Nationality!=null &&
+            x.IcPp != null) &&
+
+
+            (x.FirstName.ToLower().Contains(text.ToLower()) ||
+            x.LastName.ToLower().Contains(text.ToLower()) ||
+            x.Nationality.ToLower().Contains(text.ToLower()) ||
+            x.IcPp.ToLower().Contains(text.ToLower()))
+
+            ).ToList();
+
+            StateHasChanged();
+
+        }
+
+
+    }
+
+
+
+    void navi(string id)
+    {
+        nav.NavigateTo($"/employee/{id}");
+    }
+}

@@ -1,0 +1,1407 @@
+﻿@page "/makePayment"
+@using System.Globalization
+
+
+@if (pageLoading)
+{
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+
+                <Chase style="margin-left:45%; margin-top: 45vh;"></Chase>
+
+            </div>
+        </div>
+
+    </div>
+}
+else
+{
+
+    @if (logger.checkAccess("/makePayment",rollId) )
+    {
+     <div class="container-fluid shadow" >
+        <div class="row" style="padding-left:15px;padding-right:15px">
+
+            <div class="col-3 lg-border p-1">
+
+                <div class="row">
+                    <div class="col-12 bg-opacity-75 " style="padding-top:10px; padding-bottom:10p;">
+                        <Animate Animation="Animations.ZoomIn" Duration="TimeSpan.FromSeconds(0.5)" Delay="TimeSpan.FromSeconds(0)">
+                            <input class="form-control" type="text" @oninput="@((ChangeEventArgs __e) =>searchEmployee( __e?.Value?.ToString()) )" placeholder="Search Employees" />
+                        </Animate>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="row ">
+                    <div class="col-12 employe-list-scroll" style="overflow-y:auto; height:85vh">
+                        <Animate Animation="Animations.SlideUp" Duration="TimeSpan.FromSeconds(1)" Delay="TimeSpan.FromSeconds(0)">
+                            <div class="p-2 mb-3 bg-info  text-white" style="background-color:#17A2B8 !important;"><h6>Select an Employee From Bellow</h6></div>
+
+                            <table class="table table-secondary table-responsive table-striped table-hover employee-list table-sm">
+                                <thead class="sticky-top">
+                                    <tr>
+
+
+
+                                        <th>
+                                            Name
+                                        </th>
+                                        <th>
+                                            IC/PP
+                                        </th>
+                                        <th>
+                                            Code
+                                        </th>
+
+
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var e in employeeListSearched)
+                                    {
+                                        @if (SelectedEmployee != null && SelectedEmployee == e)
+                                        {
+                                            <tr class="table-primary">
+
+
+
+
+                                                <td style="font-size:13px">
+                                                    @e.FirstName&nbsp;@e.LastName
+                                                </td>
+                                                <td style="font-size:13px">
+                                                    @e.IcPp
+                                                </td>
+                                                <td style="font-size:13px">
+                                                    @e.EmployeeCode
+                                                </td>
+
+
+
+                                            </tr>
+                                        }
+                                        else
+                                        {
+
+                                            <tr @onclick="@(async()=>{SelectedEmployee = e;
+
+
+                                            ispayroolsLoading = true;
+                                            await InvokeAsync(StateHasChanged);
+
+
+
+
+                                            payrolldeductionschema.Id = Guid.NewGuid();
+                                            payrolldeductionschema.EmployeeId = SelectedEmployee.Id;
+
+                                             using(sealConsultantContext dbcontext = new sealConsultantContext())
+                                            {
+
+
+
+
+
+                                                    Payrolldeductionschema? schema = await dbcontext.Payrolldeductionschemas.FirstOrDefaultAsync(x => x.EmployeeId == SelectedEmployee.Id &&x.SinceDate<=SchemaEffectiveMonth &&(x.EndDate >= SchemaEffectiveMonth || x.EndDate==null));
+
+
+                                                        
+
+
+                                                            if (schema != null)
+                                                            {
+                                                                    payrollsRelated = await dbcontext.Payrolls.Where(x => x.SchemaId == schema.Id).OrderBy(x=>x.Type).ToListAsync();
+                                                                    deductionsRelated = await dbcontext.Deductions.Where(x => x.SchemaId == schema.Id).OrderBy(x=>x.Type).ToListAsync();
+                                                            }else
+                                                            {
+                                                                    payrollsRelated = null;
+                                                                    deductionsRelated = null;
+
+                                                            }
+
+
+
+
+
+
+
+
+                                                 payrollByMonthStuffsRelated = await dbcontext.PayrollByMonthStuffs.Where(x => x.EmployeeId == SelectedEmployee.Id && x.Month.Value.Month == SelectedMonth.Month).ToListAsync();
+
+
+
+                                             }
+                                             ispayroolsLoading = false;
+
+
+
+                                             await InvokeAsync(StateHasChanged);
+
+
+
+                                        })">
+
+
+
+                                                <td style="font-size:13px">
+                                                    @e.FirstName&nbsp;@e.LastName
+                                                </td>
+                                                <td style="font-size:13px">
+                                                    @e.IcPp
+                                                </td>
+                                                <td style="font-size:13px">
+                                                    @e.EmployeeCode
+                                                </td>
+
+
+                                            </tr>
+
+                                        }
+
+                                    }
+
+                                </tbody>
+                            </table>
+                        </Animate>
+
+
+                    </div>
+                </div>
+
+
+
+
+
+
+
+            </div>
+
+
+            <div class="col p-1">
+
+                <div class="container-fluid">
+
+                    <div class="row" style="margin-top:30px">
+                          <div class="col">
+                            
+                                 <div class="accordion" id="accordionExample">
+                        
+                                        <div class="accordion-item">
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingTwo">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                    Add new Payroll Schema
+                </button>
+            </h2>
+            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo"
+                data-bs-parent="#accordionExample">
+                <div class="accordion-body">
+                      <div class="row" style="margin-top:30px">
+                        <div class="col-12">
+                            <h4> Earnings </h4>
+
+
+                            <table class="table table-Secondary table-responsive">
+                                <tbody>
+                                    <tr>
+                                       <td>
+                                            <label class="text-dark"> Type of Field </label>
+                                            <select @bind="p.Type" class="form-control">
+                                                <option value="" selected disabled>Select Types</option>
+                                                <option value="Fixed">Fixed</option>
+                                                <option value="Percentage">Percentage</option>
+                                  
+                                            </select>
+                                        </td>
+                                         <td>
+                                              <label class="text-dark"> Field Name </label>
+                                              <input @bind=p.Name class="form-control" placeholder="Enter Field Name">
+                                         </td>
+
+                                     
+                                      
+                                       
+                                        @if (p.Type == "Fixed")
+                                        {
+                                            <td>
+                                                <label> Amount </label>
+                                                <input class="form-control" @bind="p.Amount" placeholder="Enter the Amount">
+                                            </td>
+                                        }
+                                        else if (p.Type == "Percentage")
+                                        {
+                                            <td>
+                                                <label class="text-dark">Percentage</label>
+                                                <input @bind="p.Percentage" class="form-control" placeholder="enter the percentage">
+                                            </td>
+
+                                            <td class="justify-content-center">
+                                                <label class="text-dark">Related Field</label>
+                                                <select @bind="p.ReletedPayrollId" class="form-control">
+                                                    <option value="" selected disabled>Related Field</option>
+                                                    @foreach (var field in payrollsTobeadded.Where(x => x.Type == "Fixed"))
+                                                    {
+                                                        <option value="@field.Id">@field.Name</option>
+
+                                                    }
+                                                </select>
+                                            </td>
+
+                                        }
+
+                                        @if (p.Type == "Fixed" || p.Type == "Percentage")
+                                        {
+                                            <td class="d-grid gap-2 col-6 mx-auto" style="padding-top:35px">
+
+                                                <button type="button" class="btn btn-primary" @onclick="@(()=>
+                                                {
+
+                                                   if(SelectedEmployee != null && SchemaEffectiveMonth != null ){
+
+
+
+                                                    p.Id= Guid.NewGuid();
+                                                    p.EmployeeId = SelectedEmployee?.Id;
+
+
+
+
+                                                    if(p.Percentage!=null){
+                                                        p.Amount = calculateaPAmount(payrollsTobeadded.FirstOrDefault(x=>x.Id == p.ReletedPayrollId).Amount,@p.Percentage);
+                                                    }
+
+                                                    p.SchemaId = this.payrolldeductionschema.Id;
+
+                                                   payrollsTobeadded.Add(p);
+
+
+
+
+                                                    p = new Payroll();
+                                                    p.EmployeeId= SelectedEmployee?.Id;
+
+
+                                                   }else{
+                                                       var parameters = new ModalParameters().Add(nameof(OkModal.Message),"Employe or month has not been selected");
+
+                                                       var modal = Modal.Show<OkModal>("Confimation", parameters);
+                                                   }
+
+
+
+                                                })">
+
+
+                                                    <div class="row">
+
+                                                        <div class="col">ADD </div>
+
+                                                        @if (saving)
+                                                        {
+                                                            <div class="col"><Wave Size="20px" Color="white"></Wave></div>
+                                                        }
+                                                    </div>
+
+                                                </button>
+
+
+                                            </td>
+
+                                        }
+                                        else
+                                        {
+
+                                            <td class="d-grid gap-2 col-6 mx-auto" style="padding-top:35px">
+                                                <button type="button" class="btn btn-outline-primary" disabled> Add</button>
+                                            </td>
+
+
+
+                                        }
+
+
+
+                                    </tr>
+                                </tbody>
+                            </table>
+
+
+                        </div>
+                    </div>
+
+
+
+                    <div class="row">
+                        <div class="col-12">
+
+                            <h4> Deductions </h4>
+
+                            <table class="table table-Secondary table-responsive">
+                                <tbody>
+
+                                    <tr>
+                                        <td>
+                                            <label class="text-dark"> Type of Field </label>
+                                            <select @bind="d.Type" class="form-control">
+                                                <option value="" selected disabled>Select Types</option>
+                                                <option value="Fixed">Fixed</option>
+                                                <option value="Percentage">Percentage</option>
+                                                 <option value="EPF">EPF</option>
+                                            </select>
+                                        </td>
+                                      
+
+                                        @if (d.Type == "EPF")
+                                        {
+                                          <td>
+                                            <label class="text-dark"> Field Name </label>
+                                            <input class="form-control" value="EPF" disabled/>
+                                          </td>
+                                        }else{
+                                            <td>
+                                                <label class="text-dark"> Field Name </label>
+                                                <input @bind=d.Name class="form-control" placeholder="Enter Field Name">
+                                            </td>
+                                        }
+
+                                      
+                                        @if (d.Type == "Fixed")
+                                        {
+                                            <td>
+                                                <label> Amount </label>
+                                                <input class="form-control" @bind="d.Amount" placeholder="Enter the Amount">
+                                            </td>
+                                        }
+                                        else if (d.Type == "Percentage")
+                                        {
+                                            <td>
+                                                <label class="text-dark">Percentage</label>
+                                                <input @bind="d.Percentage" class="form-control" placeholder="enter the percentage">
+                                            </td>
+
+                                            <td class="justify-content-center">
+                                                <label class="text-dark">Related Field</label>
+                                                <select @bind="d.ReferencePaymentId" class="form-control">
+                                                    <option value="" selected disabled>Related Field</option>
+                                                    @foreach (var field in payrollsTobeadded.Where(x => x.Type == "Fixed"))
+                                                    {
+                                                        <option value="@field.Id">@field.Name</option>
+
+                                                    }
+                                                </select>
+                                            </td>
+
+                                        }else if (d.Type == "EPF")
+                                        {
+                                          
+
+                                            <td class="justify-content-center">
+                                                <label class="text-dark">Select the Basic Field</label>
+
+
+                                                <select @bind="p.ReletedPayrollId" class="form-control">
+
+
+                                                    <option value="" selected disabled>Related Field</option>
+                                                    @foreach (var field in payrollsTobeadded.Where(x => x.Type == "Fixed"))
+                                                    {
+                                                        <option value="@field.Id">@field.Name</option>
+
+                                                    }
+
+
+                                                </select>
+                                            </td>
+
+                                        }
+
+
+
+                                        @if (d.Type == "Fixed" || d.Type == "Percentage" || d.Type == "EPF")
+                                        {
+                                            <td class="d-grid gap-2 col-6 mx-auto" style="padding-top:35px">
+
+                                                <button type="button" class="btn btn-primary" @onclick="@(()=>{
+
+                                                    if(SelectedEmployee != null && SchemaEffectiveMonth !=null){
+
+
+
+                                                     d.Id= Guid.NewGuid();
+
+                                                     d.Employeeid = SelectedEmployee?.Id;
+
+
+
+
+
+
+
+                                                     if(d.Percentage == null && d.Amount == null)
+                                                     {
+                                                        d.Name = "EPF";
+
+                                                        if (SelectedEmployee.Nationality == "Malaysia")
+                                                        {
+
+                                                        
+
+                                                        var epf = EpFlocals.FirstOrDefault(x => payrollsTobeadded.FirstOrDefault(x=>x.Id == p.ReletedPayrollId).Amount >= x.From && payrollsTobeadded.FirstOrDefault(x=>x.Id == p.ReletedPayrollId).Amount <= x.To);
+                                                        if (epf != null)
+                                                        {
+
+
+                                                            d.Amount = epf.ByTheEmployee;
+
+                                                        }
+
+                                                    }
+                                                    else
+                                                    {
+                                                           var epf = EpfForeigns.FirstOrDefault(x => payrollsTobeadded.FirstOrDefault(x=>x.Id == p.ReletedPayrollId).Amount >= x.From && payrollsTobeadded.FirstOrDefault(x=>x.Id == p.ReletedPayrollId).Amount <= x.To);
+                                                            if (epf != null)
+                                                            {
+
+
+                   
+                                                               d.Amount = epf.ByTheEmployee;
+
+
+                                                            }
+                                                    }
+
+                                                   }
+
+
+
+
+
+
+                                                     if(d.Percentage!=null){
+                                                     d.Amount = calculateaPAmount(@payrollsTobeadded.FirstOrDefault(x=>x.Id == d.ReferencePaymentId).Amount,d.Percentage);
+
+
+
+
+                                                    }
+                                                          d.SchemaId= payrolldeductionschema.Id;
+                                                          deductionTobeaddeds.Add(d);
+
+
+                                                     d = new Deduction();
+                                                     d.Employeeid = SelectedEmployee.Id;
+
+                                                    }
+                                                    else{
+
+                                                        var parameters = new ModalParameters().Add(nameof(OkModal.Message), "Employee or month has not been selected");
+
+                                                        var modal = Modal.Show<OkModal>("Confimation", parameters);
+                                                     }
+
+
+
+
+
+
+                                                })">
+
+
+                                                    <div class="row">
+
+                                                        <div class="col">ADD </div>
+
+                                                        @if (savingd)
+                                                        {
+                                                            <div class="col"><Wave Size="20px" Color="white"></Wave></div>
+                                                        }
+                                                    </div>
+
+                                                </button>
+
+
+                                            </td>
+                                        }
+                                        else
+                                        {
+
+                                            <td class="d-grid gap-2 col-6 mx-auto" style="padding-top:35px">
+                                                <button type="button" class="btn btn-outline-primary" disabled> Add</button>
+                                            </td>
+
+
+
+                                        }
+
+
+
+
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+
+
+                    <div class="row">
+                        <div class="col">
+                               @if (payrollsTobeadded?.Count > 0 || deductionTobeaddeds?.Count > 0)
+                    {
+                        <div calss="row justify-content-center">
+
+                            <div class="col">
+
+                                <h4>Break down of the stuff salary</h4>
+
+                            </div>
+
+                        </div>
+
+
+                        <div calss="row justify-content-center">
+                            <div class="col-auto">
+
+
+
+
+                                <table class="table table-bordered-2 table-hover table-responsive">
+                                    <thead>
+                                        <tr class="sticky-table-header">
+                                            <th>
+                                                -
+                                            </th>
+
+                                            <th>
+                                                Flied Name
+                                            </th>
+                                            <th>
+                                                Type
+                                            </th>
+                                            <th style="text-align:right">
+                                                Amount
+                                            </th>
+
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var payroll in payrollsTobeadded)
+                                        {
+                                            <tr class="sticky-table-header">
+                                                <td>
+                                                    <button class="btn btn-close bg-white" @onclick="()=>payrollsTobeadded.Remove(payroll)"></button>
+                                                </td>
+                                                <td>
+                                                    @payroll.Name
+                                                </td>
+                                                <td>
+                                                    @payroll.Type
+                                                </td>
+                                                @if (payroll.Percentage == null)
+                                                {
+                                                    <td style="text-align:right">
+                                                        RM @payroll.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                    </td>
+
+                                                }
+                                                else
+                                                {
+                                                    <td style="text-align:right">
+                                                        RM @payroll.Percentage % @payrollsTobeadded.FirstOrDefault(x=>x.Id == payroll.ReletedPayrollId).Amount (@payrollsTobeadded.FirstOrDefault(x=>x.Id == payroll.ReletedPayrollId).Name) = @calculateaPAmount(@payrollsTobeadded.FirstOrDefault(x=>x.Id == payroll.ReletedPayrollId).Amount,@payroll.Percentage)?.ToString("F", CultureInfo.InvariantCulture)
+                                                    </td>
+                                                }
+
+                                            </tr>
+
+
+                                        }
+
+                                
+
+
+
+
+                                        @foreach (var Deduction in deductionTobeaddeds)
+                                        {
+                                            <tr style="background-color:d#f8d7da;">
+                                                <td style="background-color:#f8d7da;">
+                                                    <button class="btn btn-close bg-white" @onclick="()=>deductionTobeaddeds.Remove(Deduction)"></button>
+                                                </td>
+                                                <td style="background-color:#f8d7da;">
+                                                    @Deduction.Name
+                                                </td>
+                                                <td style="background-color:#f8d7da;">
+                                                    @Deduction.Type
+                                                </td>
+                                                @if (Deduction.Percentage == null)
+                                                {
+                                                    <td style="background-color:#f8d7da;; text-align:right">
+                                                        RM @Deduction.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                    </td>
+
+                                                }
+                                                else
+                                                {
+                                                    <td style="background-color:#f8d7da; text-align:right">
+                                                        RM @Deduction.Percentage % @payrollsTobeadded.FirstOrDefault(x=>x.Id == Deduction.ReferencePaymentId).Amount (@payrollsTobeadded.FirstOrDefault(x=>x.Id == Deduction.ReferencePaymentId).Name) = @calculateaPAmount(payrollsTobeadded.FirstOrDefault(x=>x.Id == Deduction.ReferencePaymentId).Amount,Deduction.Percentage)?.ToString("F", CultureInfo.InvariantCulture))
+                                                    </td>
+                                                }
+
+                                            </tr>
+
+
+                                        }
+                                    
+
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+
+
+                                            <td style="text-align:right">RM @CalculateTotalBaseSalary()</td>
+                                        </tr>
+
+                                    </tbody>
+
+                                </table>
+
+
+
+
+
+
+                            </div>
+                        </div>
+                    }
+                        </div>
+                    </div>
+
+
+                    
+                    <div class="row p-1">
+                        <div class="col-12 text-center">
+                            @if (saving)
+                            {
+                                <Chase></Chase>
+
+                            }
+                            else
+                            {
+                                <button class="btn btn-primary " @onclick="SaveSchema">Save Changes</button>
+                            }
+
+
+
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+      
+    </div>
+                                 </div>
+                             
+                        </div>
+
+
+                        <div class="col-4">
+                           <div class="input-group  p-2">
+                               <span class="input-group-text" id="basic-addon1">Select a Month</span>
+                         
+                                <input class="form-control" type="month" @onchange="schemaDatechage" />
+                            </div>
+                            
+                        </div>
+                       
+
+
+                    </div>
+
+                   
+
+
+
+                  
+
+
+                      <div class="row" style="margin-top:10px">
+                        <div class="col-12">
+                            <h4> Monthly Additions/Deductions </h4>
+
+                            <table class="table  table-responsive" style="border:none !important;">
+                                <tr>
+                                    <td>
+                                        <input @bind="payrolBymonth.FieldName" type="text" class="form-control " placeholder="Enter Field Name">
+                                    </td>
+                                    <td>
+                                        <input @bind="payrolBymonth.Amount" type="number" class="form-control " placeholder="Amount">
+                                    </td>
+
+
+                                    <td>
+                                        <div class="input-group ">
+                                            <label class="form-check-label" for="flexSwitchCheckChecked">Deduction</label>
+                                            <div class="form-check form-switch" style="margin-left:5px; margin-right:5px">
+
+                                                <input @bind="payrolBymonth.Earning" class="form-check-input" type="checkbox" id="flexSwitchCheckChecked">
+
+                                            </div>
+                                            <label class="form-check-label" for="flexSwitchCheckChecked">Earning</label>
+
+                                        </div>
+
+
+                                    </td>
+                                    <td>
+                                        <button type="button"  class="btn btn-primary " style="background-color:#76b5c5" @onclick="savePayByMonth"> Add </button>
+                                    </td>
+                                </tr>
+
+                            </table>
+
+                        </div>
+                    </div>
+
+
+
+
+
+                    @*.........................................................................to be added table .........................................................................................................................*@
+                 
+
+
+
+
+                    <div calss="row justify-content-center">
+
+                        <div class="col">
+
+                            <h4>Schema for month @SchemaEffectiveMonth?.ToString("MMMM")</h4>
+
+                        </div>
+
+                    </div>
+
+                    @if (ispayroolsLoading)
+                    {
+                        <Chase></Chase>
+                    }
+                    else
+                    {
+
+                        <div calss="row justify-content-center">
+                            <div class="col-auto">
+
+
+
+
+                                <table class="table table-bordered-2 table-hover table-responsive">
+                                    <thead>
+                                        <tr class="light-table-header">
+
+
+                                            <th>
+                                                Flied Name
+                                            </th>
+                                            <th>
+                                                Type
+                                            </th>
+                                            <th style="text-align:right">
+                                                Amount
+                                            </th>
+
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+
+                                        @if (payrollsRelated != null)
+                                        {
+                                            @foreach (var payroll in payrollsRelated)
+                                            {
+                                                <tr>
+
+                                                    <td>
+                                                        @payroll.Name
+                                                    </td>
+                                                    <td>
+                                                        @payroll.Type
+                                                    </td>
+                                                    @if (payroll.Percentage == null)
+                                                    {
+                                                        <td style="text-align:right">
+                                                            RM @payroll.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                        </td>
+
+                                                    }
+                                                    else
+                                                    {
+                                                        <td style="text-align:right">
+                                                            RM @payroll.Percentage % @payrollsRelated.FirstOrDefault(x=>x.Id == payroll.ReletedPayrollId).Amount (@payrollsRelated.FirstOrDefault(x=>x.Id == payroll.ReletedPayrollId).Name) = @calculateaPAmount(@payrollsRelated.FirstOrDefault(x=>x.Id == payroll.ReletedPayrollId).Amount,@payroll.Percentage)?.ToString("F", CultureInfo.InvariantCulture)
+                                                        </td>
+                                                    }
+
+                                                </tr>
+
+
+                                            }
+                                        }
+
+
+
+
+
+
+                             
+                                        @foreach (var DeductionMonth in payrollByMonthStuffsRelated.Where(x=>x.Earning==true))
+                                        {
+                                            <tr>
+                                              
+                                                <td>
+                                                    @DeductionMonth.FieldName
+                                                </td>
+                                                <td>
+                                                    Monthly
+                                                </td >
+                                                <td style="text-align:right">
+                                                    @DeductionMonth.Amount
+                                                </td>
+                                            </tr>
+                                          
+
+                                            
+                                        }
+
+                                        @if (deductionsRelated != null)
+                                        {
+                                            @foreach (var Deduction in deductionsRelated)
+                                            {
+                                                <tr style="background-color:#f8d7da;">
+
+                                                    <td style="background-color:#f8d7da;">
+                                                        @Deduction.Name
+                                                    </td>
+                                                    <td style="background-color:#f8d7da;">
+                                                        @Deduction.Type
+                                                    </td>
+                                                    @if (Deduction.Percentage == null)
+                                                    {
+                                                        <td style="background-color:#f8d7da; text-align:right">
+                                                            RM @Deduction.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                        </td>
+
+                                                    }
+                                                    else
+                                                    {
+                                                        <td style="background-color:#f8d7da; text-align:right">
+                                                            RM @Deduction.Percentage % @payrollsRelated.FirstOrDefault(x=>x.Id == Deduction.ReferencePaymentId).Amount (@payrollsRelated.FirstOrDefault(x=>x.Id == Deduction.ReferencePaymentId).Name) = @calculateaPAmount(payrollsRelated.FirstOrDefault(x=>x.Id == Deduction.ReferencePaymentId).Amount,Deduction.Percentage)?.ToString("F", CultureInfo.InvariantCulture))
+                                                        </td>
+                                                    }
+
+                                                </tr>
+
+
+                                            }
+                                        }
+
+
+
+
+
+
+
+
+                              @foreach (var DeductionMonth in payrollByMonthStuffsRelated.Where(x=>x.Earning!=true))
+                                        {
+                                            <tr>
+                                              
+                                                <td style="background-color:#f8d7da;">
+                                                    @DeductionMonth.FieldName
+                                                </td>
+                                                <td style="background-color:#f8d7da;">
+                                                    Monthly
+                                                </td style="background-color:#f8d7da;">
+                                                <td style="background-color:#f8d7da; text-align:right">
+                                                    @DeductionMonth.Amount
+                                                </td>
+                                            </tr>
+                                          
+
+                                            
+                                        }
+
+                                        <tr>
+                                             <td class="table-success">
+                                                
+                                                </td>
+                                                <td class="table-success">
+                                           
+                                                </td>
+                                                <td class="table-success" style="text-align:right">
+                                                  @CalculateTotalSalary()
+                                                </td>
+                                        </tr>
+
+                                    </tbody>
+
+                                </table>
+
+
+
+
+
+
+                            </div>
+                        </div>
+                    }
+
+
+
+
+                </div>
+            </div>
+
+
+
+
+
+            
+
+
+
+
+
+
+
+
+        </div>
+
+
+
+    </div>
+}
+else
+{
+  <div class="container-fluid">
+      <div class="col">
+          <img src="download.jpg" class="img-fluid" alt="Responsive image">
+      </div>
+  </div>
+}
+
+
+
+   
+
+
+
+}
+
+
+
+
+@code {
+    bool pageLoading = true;
+
+     Logger logger = new Logger();
+        string rollId = string.Empty;
+
+    // Employee employee = new Employee();
+    bool saving = false;
+    bool savingd = false;
+    bool ispayroolsLoading = false;
+
+    DateOnly SelectedMonth;
+
+    DateOnly? SchemaEffectiveMonth;
+
+    List<Roll>? rolls;
+
+    List<Payroll> payrolls = new List<Payroll>();
+
+    List<Payroll> payrollsTobeadded = new List<Payroll>();
+
+    List<Payroll>? payrollsRelated = new List<Payroll>();
+
+    List<Deduction>? deductionsRelated = new List<Deduction>();
+
+    List<Deduction> deductionTobeaddeds = new List<Deduction>();
+
+    List<Deduction> deductions = new List<Deduction>();
+
+    List<Employee> employeeList = new List<Employee>();
+
+    List<Employee> employeeListSearched = new List<Employee>();
+
+    List<PayrollByMonthStuff> payrollByMonthStuffsRelated = new List<PayrollByMonthStuff>();
+
+     List<Epclocal>? EpFlocals;
+    List<EpfForeign>? EpfForeigns;
+
+    Payroll p = new Payroll();
+    Deduction d = new Deduction();
+    Employee SelectedEmployee;
+    PayrollByMonthStuff payrolBymonth = new PayrollByMonthStuff();
+
+    Payrolldeductionschema payrolldeductionschema = new Payrolldeductionschema();
+
+    string type = "";
+
+
+
+    [CascadingParameter] Blazored.Modal.Services.IModalService Modal { get; set; } = default!;
+    async Task SaveSchema()
+    {
+        saving = true;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+            var previousPayrol = dbcontext.Payrolldeductionschemas.FirstOrDefault(x => x.EmployeeId == SelectedEmployee.Id && x.EndDate == null);
+
+            if (previousPayrol != null)
+            {
+                previousPayrol.EndDate = SchemaEffectiveMonth?.AddDays(-1);
+
+            }
+
+            payrolldeductionschema.SinceDate = SchemaEffectiveMonth;
+
+            payrolldeductionschema.EmployeeId = SelectedEmployee.Id;
+
+
+            dbcontext.Payrolldeductionschemas.Add(payrolldeductionschema);
+
+            dbcontext.Payrolls.AddRange(payrollsTobeadded);
+
+            dbcontext.Deductions.AddRange(deductionTobeaddeds);
+
+            await dbcontext.SaveChangesAsync();
+
+
+            payrollsTobeadded = new List<Payroll>();
+            deductionTobeaddeds = new List<Deduction>();
+
+
+            Payrolldeductionschema? schema = await dbcontext.Payrolldeductionschemas.FirstOrDefaultAsync(x => x.EmployeeId == SelectedEmployee.Id && x.EndDate == null);
+
+            if (schema != null)
+            {
+                payrollsRelated = await dbcontext.Payrolls.Where(x => x.SchemaId == schema.Id).ToListAsync();
+                deductionsRelated = await dbcontext.Deductions.Where(x => x.SchemaId == schema.Id).ToListAsync();
+            }
+
+            payrolldeductionschema = new Payrolldeductionschema();
+
+            payrolldeductionschema.Id = Guid.NewGuid();
+
+
+        }
+        saving = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+
+    protected double? calculateaPAmount(double? mainAmount, double? percentage)
+    {
+        return (percentage / 100) * mainAmount;
+    }
+
+
+    double? CalculateTotalSalary()
+    {
+        double? total = 0;
+
+        if (payrollsRelated != null)
+        {
+            foreach (var p in payrollsRelated)
+            {
+                if (p.Amount != null)
+                {
+                    total = total + p.Amount;
+                }
+                else if (p.Percentage != null)
+                {
+
+                    total = total + calculateaPAmount(payrollsRelated.FirstOrDefault(x => x.Id == p.ReletedPayrollId).Amount, p.Percentage);
+                }
+
+            }
+        }
+        foreach (var EraningMonth in payrollByMonthStuffsRelated.Where(x=>x.Earning==true))
+        {
+
+            total = total + EraningMonth.Amount;
+
+
+                                            
+        }
+
+
+        if (deductionsRelated !=null)
+        {
+            foreach (var p in deductionsRelated)
+            {
+                if (p.Amount != null)
+                {
+                    total = total - p.Amount;
+                }
+                else if (p.Percentage != null)
+                {
+
+                    total = total - calculateaPAmount(payrollsRelated.FirstOrDefault(x => x.Id == p.ReferencePaymentId).Amount, p.Percentage);
+                }
+
+
+            }
+        }
+
+        foreach (var DeductionsMonth in payrollByMonthStuffsRelated.Where(x=>x.Earning!=true))
+        {
+
+            total = total - DeductionsMonth.Amount;
+
+
+                                            
+        }
+
+
+
+        return total;
+
+
+    }
+
+
+
+
+    double? CalculateTotalBaseSalary()
+    {
+        double? total = 0;
+        foreach (var p in payrollsTobeadded)
+        {
+            if (p.Amount != null)
+            {
+                total = total + p.Amount;
+            }
+            else if (p.Percentage != null)
+            {
+
+                total = total + calculateaPAmount(payrollsRelated.FirstOrDefault(x => x.Id == p.ReletedPayrollId).Amount, p.Percentage);
+            }
+
+
+        }
+
+
+        foreach (var p in deductionTobeaddeds)
+        {
+            if (p.Amount != null)
+            {
+                total = total - p.Amount;
+            }
+            else if (p.Percentage != null)
+            {
+
+                total = total - calculateaPAmount(payrollsRelated.FirstOrDefault(x => x.Id == p.ReferencePaymentId).Amount, p.Percentage);
+            }
+
+
+        }
+
+
+
+        return total;
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        pageLoading = true;
+        await InvokeAsync(StateHasChanged);
+        rollId = await localStorage.GetItemAsync<string>("Roll");
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            rolls = await dbcontext.Rolls.ToListAsync();
+
+            payrolls = await dbcontext.Payrolls.ToListAsync();
+
+            deductions = await dbcontext.Deductions.ToListAsync();
+            employeeList = await dbcontext.Employees.Where(x => x.Level == "Staff").OrderByDescending(x => x.Active).ThenBy(x => x.FirstName).ToListAsync();
+
+            employeeListSearched = employeeList;
+            EpFlocals = await dbcontext.Epclocals.ToListAsync();
+            EpfForeigns = await dbcontext.EpfForeigns.ToListAsync();
+
+        }
+
+
+        pageLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+    void searchEmployee(string? text)
+    {
+        //  Console.WriteLine(text);
+
+
+        if (text != null)
+        {
+
+
+            employeeListSearched = employeeList.Where(x =>
+
+            (x.FirstName != null &&
+            x.LastName != null &&
+            x.EmployeeCode != null &&
+            x.IcPp != null) &&
+
+
+            (x.FirstName.ToLower().Contains(text.ToLower()) ||
+            x.LastName.ToLower().Contains(text.ToLower()) ||
+
+            x.IcPp.ToLower().Contains(text.ToLower()) ||
+
+            x.EmployeeCode.ToLower().Contains(text.ToLower()))
+
+            ).ToList();
+
+            StateHasChanged();
+
+        }
+
+
+    }
+
+    async Task savePayByMonth()
+    {
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            if (SelectedEmployee != null && SelectedMonth != new DateOnly())
+            {
+
+                payrolBymonth.Id = Guid.NewGuid();
+
+                payrolBymonth.EmployeeId = SelectedEmployee.Id;
+
+                payrolBymonth.Month = SelectedMonth;
+
+                dbcontext.PayrollByMonthStuffs.Add(payrolBymonth);
+
+
+                await dbcontext.SaveChangesAsync();
+
+                payrolBymonth = new PayrollByMonthStuff();
+
+                payrollByMonthStuffsRelated = await dbcontext.PayrollByMonthStuffs.Where(x => x.EmployeeId == SelectedEmployee.Id && x.Month.Value.Month == SelectedMonth.Month).ToListAsync();
+            }
+            else
+            {
+                var parameters = new ModalParameters().Add(nameof(OkModal.Message), "Select an employee && select a month");
+
+                var modal = Modal.Show<OkModal>("Confimation", parameters);
+
+            }
+
+
+        }
+
+    }
+
+    async Task ondatechage(ChangeEventArgs e)
+    {
+
+
+
+        SelectedMonth = DateOnly.Parse(e?.Value.ToString());
+
+        if (SelectedEmployee != null)
+        {
+            using (sealConsultantContext dbcontext = new sealConsultantContext())
+            {
+                payrollByMonthStuffsRelated = await dbcontext.PayrollByMonthStuffs.Where(x => x.EmployeeId == SelectedEmployee.Id && x.Month.Value.Month == SelectedMonth.Month).ToListAsync();
+            }
+        }
+        else
+        {
+            var parameters = new ModalParameters().Add(nameof(OkModal.Message), "Select an employee");
+
+            var modal = Modal.Show<OkModal>("Confimation", parameters);
+
+        }
+
+        StateHasChanged();
+
+    }
+
+
+    async Task schemaDatechage(ChangeEventArgs e)
+    {
+        ispayroolsLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+
+
+        SchemaEffectiveMonth = DateOnly.Parse(e?.Value?.ToString());
+
+        SelectedMonth = SchemaEffectiveMonth.Value;
+
+        if (SelectedEmployee != null)
+        {
+            using (sealConsultantContext dbcontext = new sealConsultantContext())
+            {
+                Payrolldeductionschema? schema = await dbcontext.Payrolldeductionschemas.FirstOrDefaultAsync(x => x.EmployeeId == SelectedEmployee.Id && x.SinceDate <= SchemaEffectiveMonth
+                && (x.EndDate >= SchemaEffectiveMonth || x.EndDate == null));
+
+                if (schema != null)
+                {
+                    payrollsRelated = await dbcontext.Payrolls.Where(x => x.SchemaId == schema.Id).OrderBy(x => x.Type).ToListAsync();
+                    deductionsRelated = await dbcontext.Deductions.Where(x => x.SchemaId == schema.Id).OrderBy(x => x.Type).ToListAsync();
+                }
+                else
+                {
+                    payrollsRelated = null;
+                    deductionsRelated = null;
+
+                }
+
+
+                payrollByMonthStuffsRelated = await dbcontext.PayrollByMonthStuffs.Where(x => x.EmployeeId == SelectedEmployee.Id && x.Month.Value.Month == SelectedMonth.Month).ToListAsync();
+
+
+
+            }
+        }
+        else
+        {
+            var parameters = new ModalParameters().Add(nameof(OkModal.Message), "Select an employee");
+
+            var modal = Modal.Show<OkModal>("Confimation", parameters);
+        }
+
+       
+
+
+
+        
+
+        ispayroolsLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+}

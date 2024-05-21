@@ -1,0 +1,501 @@
+﻿@page "/SalarayReport"
+@page "/SalarayReport/{PerameterMonth}"
+@using System.Globalization
+@using System.IO;
+@inject IWebHostEnvironment _enviournment;
+
+@inject IJSRuntime jsRuntime
+
+@if (loading)
+{
+    <Chase style="margin-left:45%; margin-top: 45vh;"></Chase>
+}
+else
+{
+
+    @if (logger.checkAccess("/SalarayReport", rollId))
+    {
+        <div class="container-fluid">
+            <div class="row">
+
+                <div class="col-5">
+
+                    <Animate Animation="Animations.ZoomIn" Duration="TimeSpan.FromSeconds(0.5)" Delay="TimeSpan.FromSeconds(0)">
+                        <div class="input-group p-1 shadow">
+                          @*  <span class="input-group-text" id="basic-addon1">Select a month</span>
+                            <input type="month" class="form-control" @onchange="(ChangeEventArgs e)=>onMonthSelect(e)" />*@
+
+                            <span class="input-group-text">Start Date</span>
+                            <input type="date" class="form-control" @bind="Start_date">
+                            <span class="input-group-text">End Date</span>
+                            <input type="date" class="form-control" @bind="end_date">
+
+
+                            <btn class="btn btn-primary" @onclick="onMonthSelect"> Show </btn>
+
+
+                            <span class="input-group-text" id="basic-addon1">Select Project</span>
+                            <select class="form-select" aria-label="Default select example" @onchange="(ChangeEventArgs e)=>selectProject(e)">
+                                <option selected value="All">All</option>
+                                @foreach (Project p in projects)
+                                {
+                                    <option value="@p.Id">@p.ProjectName</option>
+
+                                }
+                            </select>
+                            <button class="btn btn-dark" @onclick="makeCsv">
+                                <span class="oi oi-spreadsheet"  aria-hidden="true" ></span> Export to csv
+                            </button>
+
+               
+
+                        </div>
+
+
+
+
+                    </Animate>
+
+                </div>
+
+                @if (distchpatchFields != null)
+                {
+                    <div class="col-6 d-flex flex-row-reverse">
+
+                        <ul class="list-group list-group-horizontal-sm" style="height:40px">
+
+
+
+
+                            <li class="list-group-item list-group-item-success">Earnings- @getTotalEarning()?.ToString("F", CultureInfo.InvariantCulture) </li>
+                            <li class="list-group-item list-group-item-danger">Deductions- @getTotalDeduction()?.ToString("F", CultureInfo.InvariantCulture)  </li>
+
+                            <li class="list-group-item list-group-item-primary">Grand total- @getTotalGrandTotal()?.ToString("F", CultureInfo.InvariantCulture)</li>
+
+                            <li class="list-group-item list-group-item-warning">Paid- @depatches.Select(x=>x.ActualAmount).Sum()?.ToString("F", CultureInfo.InvariantCulture)</li>
+
+                            <li class="list-group-item list-group-item-info">Paid- @depatches.Select(x=>x.ActualAmount).Sum()?.ToString("F", CultureInfo.InvariantCulture)</li>
+
+
+
+                        </ul>
+
+
+                    </div>
+                }
+
+
+
+
+            </div>
+            @if (isgettingdate)
+            {
+                <Chase></Chase>
+            }
+            else
+            {
+                <div class="row">
+                    <form id="printable-form">
+                        <table class="table table-responsive table-sm ">
+                            <thead class="table-primary">
+                                <tr class=" sticky-table-header">
+                                    <th>
+                                        Name
+                                    </th>
+                                    <th>
+                                        IC/PP
+                                    </th>
+                                    <th>
+                                        Code
+                                    </th>
+                                    <th>
+                                        Earnings
+                                    </th>
+                                    <th>
+                                        Deductions
+                                    </th>
+
+                                    <th>
+                                        Total
+                                    </th>
+                                    <th>
+                                        Paid
+                                    </th>
+                                    <th>
+                                        Company Cost
+                                    </th>
+
+                                </tr>
+
+                            </thead>
+                            <tbody>
+
+                                @if (distchpatchFields != null)
+                                {
+                                    @foreach (Employee e in employees)
+                                    {
+                                        <tr>
+                                            <td class="table-secondary">
+                                                @e.FirstName&nbsp;@e.LastName
+                                            </td>
+                                            <td>
+                                                @e.IcPp
+                                            </td>
+                                            <td>
+                                                @e.EmployeeCode
+                                            </td>
+                                            <td>
+                                                <table class="table table-success table-responsive table-sm">
+                                                    <tbody>
+                                                        @foreach (var d in distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning == true))
+                                                        {
+
+                                                            <tr>
+                                                                <td class="shadow-lg">
+                                                                    @d.Name
+                                                                </td>
+                                                                <td class="shadow-lg">
+                                                                    @d.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                                </td>
+
+                                                            </tr>
+                                                       }
+
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                            <td>
+                                                <table class="table table-danger table-responsive table-sm">
+                                                    <tbody>
+
+                                                        @foreach (var d in distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning != true))
+                                                        {
+
+                                                            <tr>
+                                                                <td class="shadow-lg">
+                                                                    @d.Name
+                                                                </td>
+                                                                <td class="shadow-lg">
+                                                                    @d.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                                </td>
+
+                                                            </tr>
+
+
+                                                        }
+                                                    </tbody>
+                                                </table>
+
+                                            </td>
+
+
+                                            <td class="table-primary">
+                                                @depatches.FirstOrDefault(x=>x.EmplyeeId == e.Id)?.TotalAmount?.ToString("F", CultureInfo.InvariantCulture)
+                                            </td>
+                                            <td class="table-warning">
+                                                @depatches.FirstOrDefault(x=>x.EmplyeeId == e.Id)?.ActualAmount?.ToString("F", CultureInfo.InvariantCulture)
+                                            </td>
+                                            <td class="table-info">
+                                                @depatches.FirstOrDefault(x=>x.EmplyeeId == e.Id)?.CompanyCost?.ToString("F", CultureInfo.InvariantCulture)
+                                            </td>
+                                        </tr>
+
+
+                                    }
+                                }
+
+
+                            </tbody>
+
+                        </table>
+                    </form>
+
+                </div>
+            }
+
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+
+}
+
+
+
+
+@code {
+    bool loading = true;
+    bool isgettingdate = false;
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+    List<Employee> employees;
+    List<Depatch> depatches;
+    List<ViewDispacfield> distchpatchFields;
+    List<Project> projects;
+
+    [Parameter]
+    public string? PerameterMonth { get; set; }
+
+
+    DateOnly Start_date = DateOnly.FromDateTime(DateTime.Now.AddMonths(-1));
+    DateOnly end_date = DateOnly.FromDateTime(DateTime.Now);
+
+
+    [CascadingParameter] Blazored.Modal.Services.IModalService Modal { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+        rollId = await localStorage.GetItemAsync<string>("Roll");
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            employees = await dbcontext.Employees.Where(x => x.Level == "Worker" && x.Active == true).OrderBy(x => x.FirstName).ToListAsync();
+            projects = await dbcontext.Projects.Where(x => x.IsSubProject != true).ToListAsync();
+
+            if (PerameterMonth != null)
+            {
+                DateOnly month = DateOnly.Parse(PerameterMonth);
+                distchpatchFields = await dbcontext.ViewDispacfields.Where(x => x.Month >= Start_date && x.Month <= end_date).ToListAsync();
+            }
+        }
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    async Task onMonthSelect()
+    {
+        isgettingdate = true;
+        await InvokeAsync(StateHasChanged);
+      
+
+  
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+            distchpatchFields = await dbcontext.ViewDispacfields.Where(x => x.Month >= Start_date && x.Month <= end_date).ToListAsync();
+
+            depatches = await dbcontext.Depatches.Where(x => x.Month >= Start_date && x.Month <= end_date).ToListAsync();
+
+        }
+        isgettingdate = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    double? getTotalEarning()
+    {
+        double? totalEarning = 0;
+
+        @foreach (Employee e in employees)
+        {
+            foreach (var d in distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning == true))
+            {
+                if (d.Amount != null)
+                {
+                    totalEarning = d.Amount + totalEarning;
+                }
+
+            }
+        }
+
+
+
+
+        return totalEarning;
+
+    }
+
+    double? getTotalDeduction()
+    {
+        double? totalDeductions = 0;
+
+        @foreach (Employee e in employees)
+        {
+            foreach (var d in distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning != true))
+            {
+                if (d.Amount != null)
+                {
+                    totalDeductions = d.Amount + totalDeductions;
+                }
+
+
+            }
+        }
+
+
+
+
+        return totalDeductions;
+
+    }
+
+    double? getTotalGrandTotal()
+    {
+        double? total = 0;
+
+
+        total = getTotalEarning() - getTotalDeduction();
+
+
+
+
+        return total;
+
+    }
+
+
+    async Task makeCsv()
+    {
+        var basePath = Path.Combine("wwwroot", "Docs");
+
+        var path = Path.Combine(_enviournment.ContentRootPath, basePath, "Export.csv");
+
+
+
+        using (StreamWriter file = new StreamWriter(path,false))
+        {
+
+            try
+            {
+                file.WriteLine($"Name,IC/PP,Code,Earnings,Total Earning,Deductions,Total Deductions,Total,Paid,Company Cost");
+
+                foreach (Employee e in employees)
+                {
+
+
+                    string earnings = "";
+
+                    double totalEarnings = 0;
+                    double totalDeductions = 0;
+
+                    string deductions = "";
+
+                    foreach (var d in distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning == true))
+                    {
+
+
+                        earnings = earnings + $"\"{d.Name}- {d.Amount?.ToString("F", CultureInfo.InvariantCulture)}{Environment.NewLine}\"";
+
+
+
+                        totalDeductions = totalDeductions + d.Amount.Value;
+
+                    }
+
+                    foreach (var d in distchpatchFields.Where(x => x.EmplyeeId == e.Id && x.Isearning != true))
+                    {
+
+
+                        deductions = deductions + $"\"{d.Name}- {d.Amount?.ToString("F", CultureInfo.InvariantCulture)}{Environment.NewLine}\"";
+
+
+                        totalEarnings = totalEarnings + d.Amount.Value;
+
+                    }
+
+                   
+
+                    
+                    file.WriteLine($"{e.FirstName} {e.LastName},{e.IcPp},{e.EmployeeCode},{earnings},{totalEarnings.ToString("F", CultureInfo.InvariantCulture)},{deductions},{totalDeductions.ToString("F", CultureInfo.InvariantCulture)},{depatches.FirstOrDefault(x => x.EmplyeeId == e.Id)?.TotalAmount?.ToString("F", CultureInfo.InvariantCulture)},{depatches.FirstOrDefault(x => x.EmplyeeId == e.Id)?.ActualAmount?.ToString("F", CultureInfo.InvariantCulture)},{depatches.FirstOrDefault(x => x.EmplyeeId == e.Id)?.CompanyCost?.ToString("F", CultureInfo.InvariantCulture)}");
+
+                   // file.WriteLine($",,,{earnings},{totalEarnings},{deductions},{totalDeductions},{depatches.FirstOrDefault(x => x.EmplyeeId == e.Id)?.TotalAmount?.ToString("F", CultureInfo.InvariantCulture)},{depatches.FirstOrDefault(x => x.EmplyeeId == e.Id)?.ActualAmount?.ToString("F", CultureInfo.InvariantCulture)},{depatches.FirstOrDefault(x => x.EmplyeeId == e.Id)?.CompanyCost?.ToString("F", CultureInfo.InvariantCulture)}");
+
+
+
+                }
+
+                ShowModal("Message, Your file has been created");
+
+                await NavigateToNewTab();
+            }
+            catch
+            {
+                ShowModal("Message, Please try again");
+            }
+
+        }
+
+
+    }
+
+    public async Task NavigateToNewTab()
+    {
+        string url = "Docs/Export.csv";
+        await jsRuntime.InvokeAsync<object>("open", url, "_blank");
+    }
+
+
+   void ShowModal(string message)
+    {
+        var parameters = new ModalParameters().Add(nameof(OkModal.Message), message);
+
+        var modal = Modal.Show<OkModal>("Confimation", parameters);
+
+    }
+
+
+    async Task selectProject(ChangeEventArgs e)
+    {
+        isgettingdate = true;
+        await InvokeAsync(StateHasChanged);
+
+        if (e?.Value?.ToString() == "All")
+        {
+            using (sealConsultantContext dbcontext = new sealConsultantContext())
+            {
+                employees = await dbcontext.Employees.Where(x => x.Active == true).OrderBy(x => x.FirstName).ToListAsync();
+            }
+
+        }
+        else
+        {
+            var projectid = Guid.Parse(e?.Value?.ToString());
+
+
+            using (sealConsultantContext dbcontext = new sealConsultantContext())
+            {
+                var ProjectEmployeeList = await dbcontext.ProjectEmployees.Where(x => x.ProjectId == projectid && x.Iscurrent == true).ToListAsync();
+
+                var tempemployees = await dbcontext.Employees.Where(x => x.Active == true).OrderBy(x => x.FirstName).ToListAsync();
+
+                employees = new List<Employee>();
+
+                foreach (var pe in ProjectEmployeeList)
+                {
+                    var emp = tempemployees.FirstOrDefault(x => x.Id == pe.EmployeeId);
+
+                    if (emp != null)
+                    {
+                        employees.Add(emp);
+                    }
+
+                }
+
+
+                employees = await dbcontext.Employees.Where(x=> ProjectEmployeeList.Any(y=>y.EmployeeId == x.Id)).ToListAsync();
+
+
+            }
+
+
+        }
+
+        isgettingdate = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+
+}

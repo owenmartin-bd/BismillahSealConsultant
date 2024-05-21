@@ -1,0 +1,233 @@
+﻿@page "/chart"
+@inject IJSRuntime js
+@using BlazorInputFile
+@using LumenWorks.Framework.IO.Csv;
+@using System.Data;
+@using System.IO;
+@using System.Globalization;
+@using System;
+@using Microsoft.EntityFrameworkCore
+@using BismillahSealConsultant.Service
+@inject IFileUpload fileUpload
+@using System.Data.SqlClient
+
+<div class="container-fluid shadow" style="min-height:90vh; padding-left:15px">
+    <div class="row">
+
+
+        <div class="col-3">
+            <div class="form-group">
+                <h5>Please upload CSV file here</h5>
+                <BlazorInputFile.InputFile OnChange="HandleFileSelected"></BlazorInputFile.InputFile>
+
+            </div>
+            <br />
+            <button class="btn btn-link"> Click here to download the templete <span class="oi oi-spreadsheet link-success"></span> </button>
+
+            @if (is_saving)
+            {
+                <h5>Saving...</h5>
+
+            }
+            else
+            {
+                <button class="btn btn-primary" @onclick="save"> save </button>
+            }
+         
+            
+            <br />
+            @if (file != null)
+            {
+                <div class="alert alert-dismissible">
+                    <p> <strong>Uploaded File- </strong>@file.Name</p>
+                    <p> <strong>@alart</strong></p>
+                </div>
+            }
+
+
+        </div>
+        <div class="col-3">
+            <div class="input-group">
+                <div class="input-group mb-3">
+                    <span class="input-group-text"> Start Date </span>
+                    <input type="date" @bind=chartSchema.DateStarted class="form-control" placeholder="Recipient's username">
+
+                    <span class="input-group-text"> End Date </span>
+                    <input type="date" @bind=chartSchema.DateEnded class="form-control" placeholder="Recipient's username">
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <table class="table table-responsive">
+                <thead>
+                    <tr>
+                        <th>
+                            In time
+                        </th>
+                        <th>
+                            Out time
+                        </th>
+                        <th>
+                            Total Hours
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in charts)
+                    {
+                        <tr>
+                            <td>
+                                @c?.Intime?.ToString("h:mm tt")
+                            </td>
+                            <td>
+                                @c?.Outtime?.ToString("h:mm tt")
+                            </td>
+                            <td>
+                                @c?.Hour
+                            </td>
+                        </tr>
+
+                    }
+
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+</div>
+
+@code {
+    IFileListEntry file { get; set; }
+    string alart = string.Empty;
+    DataTable csvTable = new DataTable();
+    ChatSchema chartSchema = new ChatSchema();
+    List<DataModels.Chart> charts = new List<DataModels.Chart>();
+    List<ChatSchema> chatSchemas = new List<ChatSchema>();
+
+    bool is_saving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            chatSchemas = await dbcontext.ChatSchemas.ToListAsync();
+
+        }
+
+    }
+
+    async Task HandleFileSelected(IFileListEntry[] files)
+    {
+        file = files.FirstOrDefault();
+        csvTable = new DataTable();
+
+    
+
+        try
+        {
+            if (file.Type == "text/csv")
+            {
+                await fileUpload.UploadAsync(file, "Chart.csv", "CsvFiles");
+                alart = "File Uploaded";
+            }
+            else
+            {
+                alart = "Chose a csv file";
+                await InvokeAsync(StateHasChanged);
+            }
+
+            await Task.Run(() => readData());
+        }
+        catch
+        {
+            alart = "File Not uploaded try again";
+            await InvokeAsync(StateHasChanged);
+        }
+
+
+
+        alart = "Data reading finished";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void readData()
+    {
+        charts = new List<DataModels.Chart>();
+        chartSchema.Id = Guid.NewGuid();
+
+
+        using (var csvReader = new CsvReader(new StreamReader(System.IO.File.OpenRead(@"wwwroot/CsvFiles/Chart.csv")), true))
+        {
+            csvTable.Load(csvReader);
+
+            for (int row = 0; row < csvTable.Rows.Count; row++)
+            {
+                DataModels.Chart c = new DataModels.Chart();
+
+                c.Id = Guid.NewGuid();
+
+                c.ChartSchemaId = chartSchema.Id;
+
+                if (csvTable.Rows[row][0] != DBNull.Value)
+                {
+                    c.Intime = DateTime.Parse(csvTable.Rows[row][0].ToString(), new CultureInfo("ms-MY"));
+                }
+
+                if (csvTable.Rows[row][1] != DBNull.Value)
+                {
+                    c.Outtime = DateTime.Parse(csvTable.Rows[row][1].ToString(), new CultureInfo("ms-MY"));
+                }
+
+                if (csvTable.Rows[row][2] != DBNull.Value)
+                {
+                    // Parse the value as a double
+                    double hoursDecimal = double.Parse(csvTable.Rows[row][2].ToString(), CultureInfo.InvariantCulture);
+
+                    // Extract the whole hours part
+                    int hours = (int)hoursDecimal;
+
+                    // Extract the minutes from the fractional part (e.g., 0.30 hours * 60 minutes/hour = 18 minutes)
+                    double fractionalHours = hoursDecimal - hours;
+                    int minutes = (int)(fractionalHours * 60);
+
+                    // Create a TimeSpan from hours and minutes
+                    c.Hour = new TimeSpan(hours, minutes, 0);
+                }
+
+
+                charts.Add(c);
+
+
+            }
+        }
+
+
+
+
+    }
+
+    async Task save()
+    {
+        is_saving = true;
+        using(sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            await dbcontext.ChatSchemas.AddAsync(chartSchema);
+            await dbcontext.SaveChangesAsync();
+
+            await dbcontext.Charts.AddRangeAsync(charts);
+            await dbcontext.SaveChangesAsync();
+            charts = await dbcontext.Charts.ToListAsync();
+        }
+
+        is_saving = false;
+    }
+}

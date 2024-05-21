@@ -1,0 +1,35 @@
+﻿
+
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-12">
+
+            @*   <iframe class="lazy-iframe loaded" loading="lazy" style="height:90vh; width:100%" data-gtm-yt-inspected-7="true" src="https://ej2.syncfusion.com/products/typescript/file-manager/overview/?editable=false"></iframe>*@
+
+           @* <button class="btn btn-primary" @onclick="ShowModal">Show</button>*@
+            <img src="Slide1.png" class="rounded" style="width:100%"alt="Cinque Terre">
+        </div>    
+    </div>
+</div>
+
+@code{
+   
+    [CascadingParameter] Blazored.Modal.Services.IModalService Modal { get; set; } = default!;
+
+    private async Task ShowModal()
+    {
+        var moviesModal = Modal.Show<OkModal>("Ok");
+        var result = await moviesModal.Result;
+
+        //if (result.Cancelled)
+        //{
+        //    Console.WriteLine("Modal was cancelled");
+        //}
+        //else if (result.Confirmed)
+        //{
+        //    Console.WriteLine("Modal was closed");
+        //}
+    }
+
+}

@@ -1,0 +1,64 @@
+﻿<div class="container">
+    <div class="row">
+        <div class="col">
+            <div class="input-group">
+
+                <input type="text" class="form-control" @bind="team.TeamName" placeholder="Team Name" />
+                <input type="text" class="form-control" @bind="team.TeamPurpose" placeholder="Team Purpose" />
+
+
+                <button class="btn btn-dark btn-sm" @onclick="@(async()=>{
+
+                using(sealConsultantContext dbcontext = new sealConsultantContext()){
+
+                            team.TeamId = Guid.NewGuid();
+                            team.ProjectId = Guid.Parse(projectID);
+                            team.GroupId = Guid.Parse(GroupID);
+
+                            dbcontext.ProjectTeams.Add(team);
+
+                            await dbcontext.SaveChangesAsync();
+                            
+                            alart = $"{team.TeamName} team has been created";
+
+                            team = new ProjectTeam();
+
+                           
+
+                    }
+
+                })">
+                    Save
+                    <span class="oi oi-plus" aria-hidden="true"></span>
+                </button>
+
+
+            </div>
+        </div>
+    </div>
+    @if (alart != string.Empty)
+    {
+        <div class="row p-5" style="margin-top:10px">
+            <div class="col">
+                <div class="alert alert-success" role="alert">
+                    @alart
+                </div>
+
+            </div>
+        </div>
+    }
+
+
+</div>
+
+
+
+
+@code {
+
+    [Parameter] public string? projectID { get; set; }
+    [Parameter] public string? GroupID { get; set; }
+    ProjectTeam team = new ProjectTeam();
+    string alart = string.Empty;
+
+}

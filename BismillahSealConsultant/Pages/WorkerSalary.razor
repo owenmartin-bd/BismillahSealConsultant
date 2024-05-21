@@ -1,0 +1,879 @@
+﻿@page "/workersalary"
+@if (IsPageLoading)
+{
+    <Chase></Chase>
+}
+else
+{
+    @if (logger.checkAccess("/workersalary", rollId))
+    {
+        <div class="container-fluid">
+            <div class="row">
+
+                <div class="col-3">
+                    <h5>Select a Priod of time to generate prjected Salary</h5>
+
+                    <div class="input-group">
+
+                        <span class="input-group-text">Start Date</span>
+                        <input type="date" class="form-control" @bind="Start_date">
+                        <span class="input-group-text">End Date</span>
+                        <input type="date" class="form-control" @bind="end_date">
+
+
+                        <button class="btn btn-primary" @onclick="show"> Show All</button>
+
+                    </div>
+                </div>
+
+                <div class="col-4">
+                    <h5>Please write the exact Emmployee code to search</h5>
+
+                    <div class="input-group">
+
+                        <input type="number" class="form-control" placeholder="Employee Code" @bind="searchString" />
+
+
+                        <button class="btn btn-secondary" @onclick="Search"> Search </button>
+
+                    </div>
+                </div>
+
+
+                <div class="col-5 d-flex flex-row-reverse content-center-items">
+
+                    <ul class="list-group list-group-horizontal-sm" style="height:40px">
+
+
+                        <li class="list-group-item list-group-item-primary">Hourly Break down</li>
+
+                        <li class="list-group-item list-group-item-success">Allowance</li>
+                        <li class="list-group-item list-group-item-danger">Deductions</li>
+
+                        <li class="list-group-item list-group-item-info">Grand total</li>
+
+                    </ul>
+
+
+                </div>
+
+            </div>
+
+
+            <br />
+
+            <div class="row m-0">
+
+
+
+
+
+
+                @if (isShowingLoading)
+                {
+                    <Chase></Chase>
+                }
+                else if (showing)
+                {
+                    <div class="col-12">
+                        <table class="table table-responsive table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th class="table-dark text-light item-1">Name</th>
+                                    <th class="table-dark text-light item-0">Code</th>
+                                    <th class="table-dark text-light item-1">Ic/PP</th>
+                                    <th class="table-dark text-light item-2">Salary Details</th>
+
+
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="back-color" style="border-left: 1px solid white"></td>
+                                    <td class="back-color"></td>
+                                    <td class="back-color" style="border-right: 1px solid white"></td>
+                                    <td>
+                                        <table class="table table-responsive table-sm table-custom-2 position-sticky">
+
+                                            <thead>
+                                                <tr>
+
+
+                                                    <th class="table-primary item-child">Rate</th>
+                                                    <th class="table-primary item-child">Hours</th>
+                                                    <th class="table-primary item-child">Total</th>
+                                                    <th class="table-primary item-child">Monthly total</th>
+
+
+
+                                                    <th class="table-success item-child">Food allowance</th>
+                                                    <th class="table-success item-child">Mobile allowance</th>
+                                                    <th class="table-success item-child">House allowance</th>
+                                                    <th class="table-success item-child">Night Work allowance</th>
+                                                    <th class="table-success item-child">Other allowance</th>
+
+
+
+
+                                                    <th class="table-danger item-child">Levy</th>
+                                                    <th class="table-danger item-child">Probash deposit</th>
+                                                    <th class="table-danger item-child">Office advance</th>
+                                                    <th class="table-danger item-child">site advance</th>
+                                                    <th class="table-danger item-child">previous loan</th>
+                                                    <th class="table-danger item-child">Probash loan</th>
+                                                    <th class="table-danger item-child">PPE</th>
+                                                    <th class="table-danger item-child">Others</th>
+                                                    <th class="table-danger item-child">Penalty</th>
+                                                    <th class="table-danger item-child">EPF</th>
+                                                    <th class="table-danger item-child">SOSCO</th>
+
+
+
+                                                    <th class="table-info item-child">Grand Total</th>
+                                                </tr>
+                                            </thead>
+
+
+                                        </table>
+
+
+
+                                    </td>
+                                </tr>
+
+                                @foreach (Employee e in employeeList)
+                                {
+                                    <tr>
+                                        <td class="bg-dark text-white item-child">
+                                            @e.FirstName &nbsp;@e.LastName
+                                        </td>
+                                        <td class="bg-dark text-white item-0">
+                                            @e.EmployeeCode
+
+                                        </td>
+                                        <td class="bg-dark text-white item-child">
+                                            @e.IcPp
+                                        </td>
+
+
+                                        <td>
+
+
+
+                                            <table class="table table-responsive table-sm table-custom-2">
+
+
+                                                <tbody>
+                                                    @foreach (var r in generatepAyment(e))
+                                                    {
+                                                        <tr>
+                                                            <td class="text-primary shadow-lg item-child">
+                                                                @r.Rate
+                                                            </td>
+                                                            <td class="text-primary shadow-lg item-child">
+                                                                @r.Hours
+                                                            </td>
+                                                            <td class="text-primary shadow-lg item-child">
+                                                                @String.Format("{0:0.00}", @r.Total)
+                                                            </td>
+
+
+                                                            @if (r.MonthlyTotal != 0)
+                                                            {
+                                                                <td class="text-primary shadow-lg item-child">
+                                                                    @String.Format("{0:0.00}", @r.MonthlyTotal)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-primary shadow-lg item-child">-</td>
+                                                            }
+
+                                                            @*Aditions....................................................................................................................*@
+                                                            @if (r.Food_allowance != null && r.Food_allowance != 0)
+                                                            {
+                                                                <td class="text-success shadow-sm item-child">
+                                                                    @String.Format("{0:0.00}", @r.Food_allowance)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-success shadow-sm item-child">-</td>
+                                                            }
+
+                                                            @if (r.Mobile_allowance != null && r.Mobile_allowance != 0)
+                                                            {
+                                                                <td class="text-success shadow-sm item-child">
+                                                                    @String.Format("{0:0.00}", @r.Mobile_allowance)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-success shadow-sm item-child">-</td>
+                                                            }
+
+                                                            @if (r.House_allowance != null && r.House_allowance != 0)
+                                                            {
+                                                                <td class="text-success shadow-sm item-child">
+                                                                    @String.Format("{0:0.00}", @r.House_allowance)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-success shadow-sm item-child">-</td>
+                                                            }
+
+                                                            @if (r.Night_work_allowance != null && r.Night_work_allowance != 0)
+                                                            {
+                                                                <td class="text-success shadow-sm item-child">
+                                                                    @String.Format("{0:0.00}", @r.Night_work_allowance)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-success shadow-sm item-child">-</td>
+                                                            }
+
+                                                            @if (r.Other_allowance != null && r.Other_allowance != 0)
+                                                            {
+                                                                <td class="text-success shadow-sm item-child">
+                                                                    @String.Format("{0:0.00}", @r.Other_allowance)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-success shadow-sm item-child">-</td>
+                                                            }
+
+
+                                                            @*Deductions....................................................................................................................*@
+
+
+                                                            @if (r.Levy != null && r.Levy != 0)
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">
+                                                                    @String.Format("{0:0.00}", @r.Levy)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">-</td>
+                                                            }
+                                                            @if (r.Probash_deposit != null && r.Probash_deposit != 0)
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">
+                                                                    @String.Format("{0:0.00}", @r.Probash_deposit)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">-</td>
+                                                            }
+                                                            @if (r.office_advance != null && r.office_advance != 0)
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">
+                                                                    @String.Format("{0:0.00}", @r.office_advance)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">-</td>
+                                                            }
+                                                            @if (r.site_advance != null && r.site_advance != 0)
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">
+                                                                    @String.Format("{0:0.00}", @r.site_advance)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">-</td>
+                                                            }
+                                                            @if (r.previous_loan != null && r.previous_loan != 0)
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">
+                                                                    @String.Format("{0:0.00}", @r.previous_loan)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">-</td>
+                                                            }
+                                                            @if (r.Probash_loan != null && r.Probash_loan != 0)
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">
+                                                                    @String.Format("{0:0.00}", @r.Probash_loan)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">-</td>
+                                                            }
+
+
+                                                            @if (r.PPE != null && r.PPE != 0)
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">
+                                                                    @String.Format("{0:0.00}", @r.PPE)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">-</td>
+                                                            }
+                                                            @if (r.others != null && r.others != 0)
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">
+                                                                    @String.Format("{0:0.00}", @r.others)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">-</td>
+                                                            }
+                                                            @if (r.Penalty != null && r.Penalty != 0)
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">
+                                                                    @String.Format("{0:0.00}", @r.Penalty)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">-</td>
+                                                            }
+
+
+
+                                                            @if (r.Epf != 0)
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">
+                                                                    @String.Format("{0:0.00}", @r.Epf)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">-</td>
+                                                            }
+                                                            @if (r.Sosco != 0)
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">
+                                                                    @String.Format("{0:0.00}", @r.Sosco)
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="text-danger shadow-lg item-child">-</td>
+                                                            }
+                                                            @if (r.GrandTotal != 0)
+                                                            {
+                                                                <td class="shadow-sm item-child">
+                                                                    <strong>  @String.Format("{0:0.00}", @r.GrandTotal)</strong>
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="shadow-sm item-child">-</td>
+                                                            }
+
+                                                        </tr>
+
+                                                    }
+                                                </tbody>
+
+                                            </table>
+
+                                        </td>
+
+
+
+                                    </tr>
+
+
+
+                                }
+                            </tbody>
+
+                        </table>
+                    </div>
+                }
+
+
+
+
+
+
+
+
+
+            </div>
+
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+
+
+}
+
+
+
+
+
+@code {
+    List<Employee> employeeList = new List<Employee>();
+
+    List<WorkerHourlyRate> workerHourlyRates = new List<WorkerHourlyRate>();
+
+    List<WorkerWorkingHour> workerWorkingHours = new List<WorkerWorkingHour>();
+
+    List<EpfForeign> EpfForeigns = new List<EpfForeign>();
+
+    List<Epclocal> EpFlocals = new List<Epclocal>();
+
+    List<Sosco> soscos = new List<Sosco>();
+
+    List<SoscoAndEpfAmount> soscoAndEpfAmounts = new List<SoscoAndEpfAmount>();
+
+    List<Extradeduction> extradeductions = new List<Extradeduction>();
+    List<ExtraEarn> extraEarns = new List<ExtraEarn>();
+
+    bool IsPageLoading = true;
+    bool isShowingLoading = false;
+    bool showing = false;
+
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+
+    string searchString = string.Empty;
+
+    //DateTime selectedDate = DateTime.Now;
+
+
+    DateOnly Start_date = DateOnly.FromDateTime(DateTime.Now.AddMonths(-1));
+    DateOnly end_date = DateOnly.FromDateTime(DateTime.Now);
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsPageLoading = true;
+        await InvokeAsync(StateHasChanged);
+        rollId = await localStorage.GetItemAsync<string>("Roll");
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            EpFlocals = await dbcontext.Epclocals.ToListAsync();
+            EpfForeigns = await dbcontext.EpfForeigns.ToListAsync();
+            soscos = await dbcontext.Soscos.ToListAsync();
+        }
+
+
+
+        IsPageLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    List<HourRate> generatepAyment(Employee e)
+    {
+
+        List<HourRate> hourRates = new List<HourRate>();
+
+
+        double salaryondate = 0.0;
+
+        var rates = workerHourlyRates.Where(x => x.EmployeeId == e.Id).OrderBy(x => x.SinceDate);
+
+
+
+
+
+        var firstDayOfMonth = Start_date;
+        var lastDayOfMonth = end_date;
+
+
+
+
+
+        double salamonth = 0.00;
+
+        for (DateTime iDate = firstDayOfMonth.ToDateTime(new TimeOnly()); iDate <= lastDayOfMonth.ToDateTime(new TimeOnly()); iDate = iDate.AddDays(1))
+        {
+
+            var CurrentRate = rates.FirstOrDefault(x => x.SinceDate <= iDate && (x.Lastdate >= iDate || x.Lastdate == null));
+
+
+
+
+
+            if (CurrentRate != null)
+            {
+
+                var WorkingHourToday = workerWorkingHours.FirstOrDefault(x => x.Date == DateOnly.FromDateTime(iDate));
+
+                TimeSpan? totalHours = new TimeSpan(0, 0, 0, 0);
+
+                if (WorkingHourToday != null && WorkingHourToday.WorkingHoursRevised != null)
+                {
+                    totalHours = totalHours.Value + WorkingHourToday.WorkingHoursRevised.Value;
+                }
+                else if (WorkingHourToday != null && WorkingHourToday.WokingHours != null)
+                {
+                    totalHours = totalHours.Value + WorkingHourToday.WokingHours.Value;
+                }
+
+
+                if (WorkingHourToday != null && WorkingHourToday.ExtraHour != null)
+                {
+                    totalHours = totalHours.Value + WorkingHourToday.ExtraHour.Value;
+                }
+
+
+
+                double perminrate = CurrentRate.Rate.Value / 60;
+
+                var Totalmins = totalHours.Value.TotalMinutes;
+
+                salaryondate = Totalmins * perminrate;
+
+                salamonth = salamonth + salaryondate;
+
+
+                var h = hourRates.FirstOrDefault(x => x.Rate == CurrentRate.Rate.Value);
+
+                if (h == null)
+                {
+                    HourRate hr = new HourRate
+                        {
+                            Rate = CurrentRate.Rate.Value,
+                            Hours = totalHours,
+                            Total = salaryondate
+                        };
+                    hourRates.Add(hr);
+                }
+                else
+                {
+
+                    h.Hours = h.Hours + totalHours;
+                    h.Total = h.Total + salaryondate;
+
+                }
+
+
+            }
+
+
+
+
+        }
+
+
+
+        var firstH = hourRates.FirstOrDefault();
+
+
+
+        if (firstH != null)
+        {
+            firstH.MonthlyTotal = salamonth;
+            firstH.GrandTotal = salamonth;
+
+            var additions = extraEarns.FirstOrDefault(x => x.EmployeeId == e.Id);
+
+            //Aditions...............................................................................................................................................................................................................................
+
+            if (additions != null && additions.FoodAllowance != null)
+            {
+                firstH.Food_allowance = additions.FoodAllowance;
+
+                firstH.GrandTotal = firstH.GrandTotal + additions.FoodAllowance;
+            }
+            else
+            {
+                firstH.Food_allowance = 0;
+            }
+
+            if (additions != null && additions.MobileAllowance != null)
+            {
+                firstH.Mobile_allowance = additions.MobileAllowance;
+
+                firstH.GrandTotal = firstH.GrandTotal + additions.MobileAllowance;
+            }
+            else
+            {
+                firstH.Mobile_allowance = 0;
+            }
+
+            if (additions != null && additions.HouseAllowance != null)
+            {
+                firstH.House_allowance = additions.HouseAllowance;
+
+                firstH.GrandTotal = firstH.GrandTotal + additions.HouseAllowance;
+            }
+            else
+            {
+                firstH.House_allowance = 0;
+            }
+
+            if (additions != null && additions.NightWorkAllowance != null)
+            {
+                firstH.Night_work_allowance = additions.NightWorkAllowance;
+
+                firstH.Night_work_allowance = firstH.GrandTotal + additions.NightWorkAllowance;
+            }
+            else
+            {
+                firstH.Night_work_allowance = 0;
+            }
+
+            if (additions != null && additions.OtherAllowance != null)
+            {
+                firstH.Other_allowance = additions.OtherAllowance;
+
+                firstH.Other_allowance = firstH.GrandTotal + additions.OtherAllowance;
+            }
+            else
+            {
+                firstH.Other_allowance = 0;
+            }
+
+            //Deductions...............................................................................................................................................................................................................................
+
+            var deduct = extradeductions.FirstOrDefault(x => x.EmployeeId == e.Id);
+
+            if (deduct != null && deduct.Levy != null)
+            {
+                firstH.Levy = deduct.Levy;
+
+                firstH.GrandTotal = firstH.GrandTotal - deduct.Levy;
+            }
+            else
+            {
+                firstH.Levy = 0;
+            }
+
+
+
+            if (deduct != null && deduct.ProbashDeposit != null)
+            {
+                firstH.Probash_deposit = deduct.ProbashDeposit;
+
+                firstH.GrandTotal = firstH.GrandTotal - deduct.ProbashDeposit;
+            }
+            else
+            {
+                firstH.Probash_deposit = 0;
+            }
+
+            if (deduct != null && deduct.ProbashLoan != null)
+            {
+                firstH.Probash_loan = deduct.ProbashLoan;
+
+                firstH.GrandTotal = firstH.GrandTotal - deduct.ProbashLoan;
+            }
+            else
+            {
+                firstH.Probash_loan = 0;
+            }
+
+
+            if (deduct != null && deduct.OfficeAdvance != null)
+            {
+                firstH.office_advance = deduct.OfficeAdvance;
+
+                firstH.GrandTotal = firstH.GrandTotal - deduct.OfficeAdvance;
+            }
+            else
+            {
+                firstH.office_advance = 0;
+            }
+
+            if (deduct != null && deduct.SiteAdvance != null)
+            {
+                firstH.site_advance = deduct.SiteAdvance;
+
+                firstH.GrandTotal = firstH.GrandTotal - deduct.SiteAdvance;
+            }
+            else
+            {
+                firstH.site_advance = 0;
+            }
+
+
+            if (deduct != null && deduct.PreviousLoan != null)
+            {
+                firstH.previous_loan = deduct.PreviousLoan;
+
+                firstH.GrandTotal = firstH.GrandTotal - deduct.PreviousLoan;
+            }
+            else
+            {
+                firstH.previous_loan = 0;
+            }
+
+
+            if (deduct != null && deduct.Ppe != null)
+            {
+                firstH.PPE = deduct.Ppe;
+
+                firstH.GrandTotal = firstH.GrandTotal - deduct.Ppe;
+            }
+            else
+            {
+                firstH.PPE = 0;
+            }
+
+            if (deduct != null && deduct.Others != null)
+            {
+                firstH.others = deduct.Others;
+
+                firstH.GrandTotal = firstH.GrandTotal - deduct.Others;
+            }
+            else
+            {
+                firstH.others = 0;
+            }
+
+            if (deduct != null && deduct.Penalty != null)
+            {
+                firstH.Penalty = deduct.Penalty;
+
+                firstH.GrandTotal = firstH.GrandTotal - deduct.Penalty;
+            }
+            else
+            {
+                firstH.Penalty = 0;
+            }
+
+            if (deduct != null && deduct.Epf == true)
+            {
+                if (e.Nationality == "Malaysia")
+                {
+
+                    var epf = EpFlocals.FirstOrDefault(x => salamonth >= x.From && salamonth <= x.To);
+                    if (epf != null)
+                    {
+                        firstH.Epf = epf.ByTheEmployee.Value;
+                    }
+
+                }
+                else
+                {
+                    var epf = EpfForeigns.FirstOrDefault(x => salamonth >= x.From && salamonth <= x.To);
+                    if (epf != null)
+                    {
+                        firstH.Epf = epf.ByTheEmployee.Value;
+                    }
+                }
+            }
+            else
+            {
+                firstH.Epf = 0;
+            }
+
+
+
+            var sosco = soscos.FirstOrDefault(x => salamonth >= x.From && salamonth < x.To);
+
+            if (deduct != null && deduct.Sosco == true)
+            {
+                if (sosco != null)
+                {
+                    firstH.Sosco = sosco.EmployeeContribution.Value;
+                }
+            }
+            else
+            {
+                firstH.Sosco = 0;
+            }
+
+
+
+
+            //......................................................................................................................................................
+
+
+
+            firstH.GrandTotal = firstH.GrandTotal - firstH.Epf - firstH.Sosco;
+
+
+
+        }
+
+
+
+        //  Console.WriteLine(salamonth);
+
+
+
+        return hourRates;
+
+
+
+
+
+
+    }
+
+    async Task show()
+    {
+        isShowingLoading = true;
+        showing = false;
+        await InvokeAsync(StateHasChanged);
+
+        var firstDayOfMonth = Start_date;
+        var lastDayOfMonth = end_date;
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            employeeList = await dbcontext.Employees.Where(x => x.Level == "Worker" && x.Active == true).OrderByDescending(x => x.Active).ThenBy(x => x.FirstName).ToListAsync();
+
+            workerHourlyRates = await dbcontext.WorkerHourlyRates.ToListAsync();
+
+            workerWorkingHours = await dbcontext.WorkerWorkingHours.Where(x => x.Date >= firstDayOfMonth && x.Date <= lastDayOfMonth).ToListAsync();
+
+            extradeductions = await dbcontext.Extradeductions.Where(x => x.Date == firstDayOfMonth && x.Date == lastDayOfMonth).ToListAsync();
+            extraEarns = await dbcontext.ExtraEarns.Where(x => x.Date == firstDayOfMonth && x.Date == lastDayOfMonth).ToListAsync();
+        }
+        searchString = string.Empty;
+        isShowingLoading = false;
+        showing = true;
+        await InvokeAsync(StateHasChanged);
+
+    }
+    async Task Search()
+    {
+        isShowingLoading = true;
+        showing = false;
+        await InvokeAsync(StateHasChanged);
+
+        var firstDayOfMonth = Start_date;
+        var lastDayOfMonth = end_date;
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            employeeList = await dbcontext.Employees.Where(x => (x.Level == "Worker") && x.EmployeeCode == searchString).OrderByDescending(x => x.Active).ThenBy(x => x.FirstName).ToListAsync();
+
+            workerHourlyRates = await dbcontext.WorkerHourlyRates.ToListAsync();
+
+            workerWorkingHours = await dbcontext.WorkerWorkingHours.Where(x => x.Date >= firstDayOfMonth && x.Date <= lastDayOfMonth).ToListAsync();
+
+            extradeductions = await dbcontext.Extradeductions.Where(x => x.Date == firstDayOfMonth && x.Date == lastDayOfMonth).ToListAsync();
+            extraEarns = await dbcontext.ExtraEarns.Where(x => x.Date == firstDayOfMonth && x.Date == lastDayOfMonth).ToListAsync();
+        }
+
+        isShowingLoading = false;
+        showing = true;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+
+}

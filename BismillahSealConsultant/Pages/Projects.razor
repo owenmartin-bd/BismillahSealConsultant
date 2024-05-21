@@ -1,0 +1,541 @@
+﻿@page "/projects"
+@inject NavigationManager nav
+@if (isloading)
+{
+
+    <Chase style="margin-left:45%; margin-top: 45vh;"></Chase>
+
+}
+else
+{
+
+    @if (logger.checkAccess("/projects", rollId))
+    {
+        <div class="container-fluid shadow" style="min-height:90vh">
+
+
+            <div class="row">
+
+                <div class="col-5">
+
+
+                    <div class="accordion" id="accordionExample">
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                    Create New Project
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+
+                                    <div class="row lg-border rounded" style="padding-top:5px; padding-bottom:10px">
+                                        <div class="col-6">
+                                            <label> Project Name </label>
+                                            <input class="form-control" @bind="projectToAdd.ProjectName" type="text" />
+                                        </div>
+                                        <div class="col-3">
+                                            <label> Location </label>
+                                            <input class="form-control" @bind="projectToAdd.Location" type="text" />
+                                        </div>
+
+                                        <div class="col-3" style="padding-top:30px">
+                                            <label> Active </label>
+                                            <input class="form-check-input" @bind="projectToAdd.IsActive" type="checkbox">
+                                        </div>
+
+                                        <div class="col-6" style="padding-top:20px">
+                                            <button class="btn btn-primary" @onclick="@(async()=>{
+
+                                    using(sealConsultantContext dbcontext = new sealConsultantContext()){
+
+
+                                            projectToAdd.Id= Guid.NewGuid();
+
+                                            projectToAdd.IsSubProject = false;
+
+                                            dbcontext.Projects.Add(projectToAdd);
+
+                                            await dbcontext.SaveChangesAsync();
+
+
+                                            projectToAdd = new Project();
+
+                                            projectList = await dbcontext.Projects.ToListAsync();
+
+                                            await InvokeAsync(StateHasChanged);
+                                        }
+
+
+                                    })">
+                                                <span class="oi oi-plus" aria-hidden="true"></span> Save New Project
+                                            </button>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+
+
+
+
+
+                    <div class="row" style="margin-top:20px">
+                        <h5 class="m-1 bg-light">Project List</h5>
+                        <div class="col lg-border rounded" style="overflow-y:auto; height:80vh">
+
+                            <table class="table table-sm table-bordered table-responsive">
+                                <thead>
+                                    <tr class="sticky-table-header">
+                                        <th>
+                                            Select
+                                        </th>
+
+                                        <th>
+                                            Project Name
+                                        </th>
+                                        <th>
+                                            Location
+                                        </th>
+
+                                        <th>
+
+                                        </th>
+
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    @foreach (var p in projectList.Where(x => x.IsSubProject == false && x.IsActive == true))
+                                    {
+                                        @if (p != null && selectedProject != null && p.Id == selectedProject.Id)
+                                        {
+                                            <tr>
+                                                <td class="text-black" style="background-color:azure">
+                                                    <button class="btn btn-primary" type="button" @onclick="@(()=>{
+
+                                                selectedProject = null;
+
+                                                StateHasChanged();
+
+                                             })">
+                                                        Unselect
+                                                    </button>
+                                                </td>
+                                                <td class="text-black" style="background-color:azure">
+                                                    @p.ProjectName
+                                                </td>
+                                                <td class="text-black" style="background-color:azure">
+                                                    @p.Location
+                                                </td>
+
+                                                <td class="text-black" style="background-color:azure">
+                                                    <button class="btn btn-info" @onclick="@(()=>nav.NavigateTo($"/projectmanagement/{p.Id}"))"> Manage Project </button>
+                                                </td>
+
+
+                                            </tr>
+                                        }
+                                        else
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <button class="btn btn-primary" type="button" @onclick="@(()=>{
+
+                                                selectedProject = projectList.FirstOrDefault(x=>x.Id == p.Id);
+
+                                                StateHasChanged();
+
+                                             })">
+                                                        Select
+                                                    </button>
+                                                </td>
+                                                <td>
+                                                    @p.ProjectName
+                                                </td>
+                                                <td>
+                                                    @p.Location
+                                                </td>
+
+                                                <td>
+                                                    <button class="btn btn-outline-primary" @onclick="@(()=>nav.NavigateTo($"/projectmanagement/{p.Id}"))"> Manage Project </button>
+                                                </td>
+
+                                            </tr>
+                                        }
+
+
+
+
+                                    }
+
+
+                                </tbody>
+
+
+                            </table>
+
+
+                        </div>
+
+                    </div>
+
+
+
+
+
+                </div>
+
+                @if (selectedProject != null)
+                {
+                    <div class="col-7 lg-border" style="">
+                        <div class="row">
+                            <div class="col-12 bg-opacity-75 bg-gradient" style="padding-top:10px; padding-bottom:10px">
+
+                                <input class="form-control" type="text" @oninput="@((ChangeEventArgs __e) =>searchEmployee( __e?.Value?.ToString()) )" placeholder="Search Employees" />
+
+
+                            </div>
+
+
+                        </div>
+
+                        <div class="row">
+                            <h5 class="m-1 bg-light">Employees in the project</h5>
+                            <div class="col-6 bg-opacity-75 bg-gradient" style="padding-top:10px; padding-bottom:10px;overflow-y:auto; height:90vh">
+
+                                <table class="table table-sm sticky-table-header table-hover p-4">
+                                    <thead class="sticky-top">
+                                        <tr>
+
+                                            <th>
+                                                Photo
+                                            </th>
+                                            <th>
+                                                Name
+                                            </th>
+                                            <th>
+                                                Code
+                                            </th>
+                                            <th>
+
+                                            </th>
+
+
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        @foreach (var e in employeeListSearched)
+                                        {
+                                            @if (ProjectEmployeeList.FirstOrDefault(x => x.EmployeeId == e.Id && x.Iscurrent == true && x.ProjectId == selectedProject.Id) != null)
+                                            {
+                                                <tr>
+
+
+
+
+                                                    <td>
+                                                        <img src="Photos/e29228fc-2b46-4aa9-adf7-a1e31b1b5e13.png" class="rounded img-thumbnail" style="height:50px; width:50px">
+                                                    </td>
+                                                    <td>
+                                                        <h6 class="card-title employee-card-list-header">@e.FirstName&nbsp;@e.LastName</h6>
+                                                    </td>
+                                                    <td>
+                                                        @e.EmployeeCode
+                                                    </td>
+
+                                                    <td>
+                                                        <button class="btn btn-danger" @onclick="@(async()=>{
+
+                                                    using(sealConsultantContext dbcontext = new sealConsultantContext()){
+
+                                                    ProjectEmployee pe = dbcontext.ProjectEmployees.FirstOrDefault(x=>x.ProjectId==selectedProject.Id && x.EmployeeId == e.Id && x.Iscurrent==true);
+
+                                                    if(pe != null){
+                                                       pe.Iscurrent=false;
+                                                       pe.DateEnded = DateTime.Now;
+                                                    }
+
+                                                        await dbcontext.SaveChangesAsync();
+                                                        ProjectEmployeeList = await dbcontext.ProjectEmployees.ToListAsync();
+
+                                                        await InvokeAsync(StateHasChanged);
+
+
+                                                    }
+                                                })">
+                                                            Remove
+                                                        </button>
+                                                    </td>
+
+
+
+                                                </tr>
+                                            }
+                                        }
+
+
+
+
+
+                                    </tbody>
+                                </table>
+
+                            </div>
+
+
+
+                            @*....................................................................................................................................................................................................................*@
+
+
+                            <div class="col-6 bg-opacity-75 bg-gradient" style="padding-top:10px; padding-bottom:10px; overflow-y:auto; height:90vh">
+
+                                <div class="accordion" id="accordionExample1">
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingTwo1">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo1" aria-expanded="false" aria-controls="collapseTwo">
+                                                All Employees
+                                            </button>
+                                        </h2>
+                                        <div id="collapseTwo1" class="accordion-collapse collapse" aria-labelledby="headingTwo1" data-bs-parent="#accordionExample1">
+                                            <div class="accordion-body">
+
+                                                <div class="row p-1">
+
+                                                    <div class="col p-2">
+
+                                                        <label>Work Start Date</label>
+                                                        <input type="datetime-local" @bind=workstart class="form-control">
+
+
+
+                                                    </div>
+
+                                                </div>
+                                                <table class="table table-sm table-bordered table-hover ">
+                                                    <thead class=" sticky-table-header">
+                                                        <tr>
+
+                                                            <th>
+                                                                Photo
+                                                            </th>
+                                                            <th>
+                                                                Name
+                                                            </th>
+                                                            <th>
+                                                                Code
+                                                            </th>
+                                                            <th>
+
+                                                            </th>
+
+
+                                                        </tr>
+                                                    </thead>
+
+                                                    <tbody>
+
+
+                                                        @foreach (var e in employeeListSearched)
+                                                        {
+                                                            @if (ProjectEmployeeList.FirstOrDefault(x => x.EmployeeId == e.Id && x.Iscurrent == true && x.ProjectId == selectedProject.Id) == null)
+                                                            {
+                                                                <tr>
+
+
+
+                                                                    <td>
+                                                                        <img src="Photos/e29228fc-2b46-4aa9-adf7-a1e31b1b5e13.png" class="rounded img-thumbnail" style="height:50px; width:50px">
+                                                                    </td>
+                                                                    <td>
+                                                                        <h6 class="card-title employee-card-list-header">@e.FirstName&nbsp;@e.LastName</h6>
+                                                                    </td>
+                                                                    <td>
+                                                                        @e.EmployeeCode
+                                                                    </td>
+                                                                    <td>
+                                                                        <button class="btn btn-danger" @onclick=@(async()=>{
+                                                            using(sealConsultantContext dbcontext = new sealConsultantContext()){
+                                                            ProjectEmployee oldPe = dbcontext.ProjectEmployees.FirstOrDefault(x=>x.EmployeeId == e.Id && x.Iscurrent == true);
+                                                            if(oldPe != null){
+                                                            oldPe.DateEnded = workstart;
+                                                            oldPe.Iscurrent = false;
+                                                            }
+                                                            ProjectEmployee pe = new ProjectEmployee{
+                                                            Id=Guid.NewGuid(),
+                                                            ProjectId = selectedProject.Id,
+                                                            Iscurrent = true,
+                                                            DateStarted = workstart,
+                                                            EmployeeId = e.Id
+                                                            };
+                                                            dbcontext.ProjectEmployees.Add(pe);
+                                                            await dbcontext.SaveChangesAsync();
+                                                            ProjectEmployeeList = await dbcontext.ProjectEmployees.ToListAsync();
+                                                            await InvokeAsync(StateHasChanged);
+                                                            }
+                                                            })>
+                                                                            Add
+                                                                        </button>
+                                                                    </td>
+
+
+
+
+                                                                </tr>
+                                                            }
+
+
+                                                        }
+                                                    </tbody>
+                                                </table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+
+
+
+                            </div>
+
+
+
+
+
+
+                        </div>
+                    </div>
+                }
+
+
+
+
+
+
+            </div>
+
+
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+ 
+
+}
+
+
+
+
+@code {
+    List<Project> projectList = new List<Project>();
+    List<Employee> employeeList = new List<Employee>();
+    List<ProjectEmployee> ProjectEmployeeList = new List<ProjectEmployee>();
+    List<Employee> employeeListSearched = new List<Employee>();
+
+
+    bool isloading = true;
+
+    DateTime workstart = DateTime.Now;
+
+    DateTime workend = DateTime.Now;
+
+    Project projectToAdd = new Project();
+
+    Project selectedProject;
+
+
+
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        isloading = true;
+        await InvokeAsync(StateHasChanged);
+        rollId = await localStorage.GetItemAsync<string>("Roll");
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            projectList = await dbcontext.Projects.OrderBy(x => x.IsActive).ThenBy(x => x.ProjectName).ToListAsync();
+            employeeList = await dbcontext.Employees.Where(x => x.Active == true).OrderBy(x => x.FirstName).ToListAsync();
+            employeeListSearched = employeeList;
+            ProjectEmployeeList = await dbcontext.ProjectEmployees.ToListAsync();
+
+        }
+
+        isloading = false;
+        await InvokeAsync(StateHasChanged);
+
+
+    }
+    void searchEmployee(string? text)
+    {
+        //  Console.WriteLine(text);
+
+
+        if (text != null)
+        {
+
+
+            employeeListSearched = employeeList.Where(x =>
+
+            (x.FirstName != null &&
+            x.LastName != null &&
+            x.EmployeeCode != null &&
+            x.IcPp != null) &&
+
+
+            (x.FirstName.ToLower().Contains(text.ToLower()) ||
+            x.LastName.ToLower().Contains(text.ToLower()) ||
+
+            x.IcPp.ToLower().Contains(text.ToLower()) ||
+
+            x.EmployeeCode.ToLower().Contains(text.ToLower()))
+
+            ).ToList();
+
+            StateHasChanged();
+
+        }
+
+
+    }
+}

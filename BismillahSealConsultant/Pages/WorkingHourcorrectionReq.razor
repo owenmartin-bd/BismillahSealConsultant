@@ -1,0 +1,80 @@
+﻿@page "/correction_req"
+
+<div class="container">
+    <div class="row">
+        <div class="input-group mb-3">
+            <span class="input-group-text" id="basic-addon1">Select Date</span>
+            <input type="date" class="form-control" @bind="selected_date" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <h2>Correction Requests</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>
+                            Employee Name (code)
+                        </th>
+                        <th>
+                            In Time
+                        </th>
+                        <th>
+                            Out Time
+                        </th>
+
+
+                    </tr>
+
+                </thead>
+                <tbody>
+                    @if (workingHourcorrectionReqs != null)
+                    {
+                        @foreach (var w in workingHourcorrectionReqs)
+                        {
+                            <tr>
+                                <td>
+                                    <h6>@employees?.FirstOrDefault(x => x.Id == w.EmployeeId)?.FirstName @employees?.FirstOrDefault(x => x.Id == w.EmployeeId)?.FirstName (@employees?.FirstOrDefault(x => x.Id == w.EmployeeId)?.EmployeeCode)</h6>
+                                </td>
+                                <td>
+                                    @w.Inam?.ToString("dddd, dd MMMM yyyy HH:mm:ss")
+                                </td>
+                                <td>
+                                    @w.Outpm?.ToString("dddd, dd MMMM yyyy HH:mm:ss")
+                                </td>
+                            </tr>
+                        }
+                    }
+                   
+
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+</div>
+
+@code {
+    List<WorkingHoursCorrectionRequest>? workingHourcorrectionReqs;
+    List<Employee>? employees;
+
+    DateOnly selected_date = DateOnly.FromDateTime(DateTime.Now);
+
+    protected override async Task OnInitializedAsync()
+    {
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            workingHourcorrectionReqs = await dbcontext.WorkingHoursCorrectionRequests.ToListAsync();
+
+            employees = await dbcontext.Employees.ToListAsync();
+        }
+
+
+    }
+
+    async Task onreqestedDateChange()
+    {
+        
+    }
+}

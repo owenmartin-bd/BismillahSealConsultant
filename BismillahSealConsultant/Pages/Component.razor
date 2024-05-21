@@ -1,0 +1,118 @@
+﻿@page "/UpdateAtt"
+
+
+@using BismillahSealConsultant.DataContext
+
+
+<div class="container-fluid">
+
+    <div class="row">
+
+        <div class="col-2">
+
+
+            <h3>Employee List</h3>
+
+            <div class="mb-3">
+                <input type="text" class="form-control" placeholder="Search by Name or Code..." @bind="searchTerm" @bind:event="oninput" />
+            </div>
+
+            @if (paginatedEmployees != null)
+            {
+            <table class="table table-sm table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var employee in paginatedEmployees)
+                    {
+                    <tr>
+                        <td>@employee.EmployeeCode</td>
+                        <td>@employee.Name</td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+            <button class="btn btn-primary" @onclick="PreviousPage">Previous</button>
+            <button class="btn btn-primary" @onclick="NextPage">Next</button>
+            }
+            else
+            {
+            <p><em>Loading...</em></p>
+            }
+        </div>
+    </div>
+</div>
+@code {
+    private List<EmployeeDisplay>
+    employees;
+    private List<EmployeeDisplay>
+        paginatedEmployees;
+        private string searchTerm = "";
+        private int currentPage = 1;
+        private int pageSize = 25;
+
+        public class EmployeeDisplay
+        {
+        public string EmployeeCode { get; set; }
+        public string Name { get; set; }
+
+        }
+
+
+        protected override async Task OnInitializedAsync()
+        {
+        using (var context = new sealConsultantContext())
+        {
+        employees = await context.Employees
+        .Select(e => new EmployeeDisplay
+        {
+        EmployeeCode = e.EmployeeCode,
+        Name = e.FirstName + " " + e.LastName,
+
+        })
+        .ToListAsync();
+        }
+
+
+
+        UpdatePaginatedList();
+        }
+
+        private void UpdatePaginatedList()
+        {
+        var filtered = string.IsNullOrWhiteSpace(searchTerm)
+        ? employees
+        : employees.Where(e => e.EmployeeCode.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+        || e.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        paginatedEmployees = filtered
+        .Skip((currentPage - 1) * pageSize)
+        .Take(pageSize)
+        .ToList();
+        }
+
+        private void PreviousPage()
+        {
+        if (currentPage > 1)
+        {
+        currentPage--;
+        UpdatePaginatedList();
+        }
+        }
+
+        private void NextPage()
+        {
+        int totalItems = string.IsNullOrWhiteSpace(searchTerm) ? employees.Count : employees.Count(e => e.EmployeeCode.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) || e.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        if ((currentPage - 1) * pageSize + pageSize < totalItems)
+        {
+        currentPage++;
+        UpdatePaginatedList();
+        }
+        }
+        }
+
+

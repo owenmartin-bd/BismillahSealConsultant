@@ -1,0 +1,24 @@
+﻿<div>
+
+    <div class="p-1" style="max-height:500px; overflow-y:auto">
+
+
+        <ul class="list-group list-group-flush">
+
+            @foreach (var d in Urevieweddatelist.Distinct().OrderBy(x=>x))
+            {
+                <li class="list-group-item">@d.Value.ToString("dddd, dd MMMM yyyy");</li>
+            }
+
+        </ul>
+    </div>
+    <button class="btn btn-danger" @onclick="Close">Close</button>
+</div>
+
+@code {
+    [CascadingParameter] BlazoredModalInstance BlazoredModal { get; set; } = default!;
+
+    [Parameter] public List<DateOnly?>? Urevieweddatelist { get; set; }
+
+    private async Task Close() => await BlazoredModal.CloseAsync();
+}

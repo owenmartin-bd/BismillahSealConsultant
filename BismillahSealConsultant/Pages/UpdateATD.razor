@@ -1,0 +1,765 @@
+﻿@page "/UpdateAtt"
+
+<div class="container-fluid">
+    @if (!pageloading)
+    {
+        <div class="row">
+            <div class="col-6">
+                <div class="p-1">
+                    <form>
+                        <div class="input-group mb-3">
+                            @if (groups != null)
+                            {
+                                <select class="form-select form-select-sm" aria-label=".form-select-sm example" @onchange="(ChangeEventArgs e)=>{ onGroupSelected(Guid.Parse(e?.Value?.ToString())); }">
+
+
+                                    <option selected disabled>CLick to select the Group</option>
+
+                                    @foreach (var g in groups)
+                                    {
+                                        <option value="@g.Id"> @g.GroupName </option>
+                                    }
+                                </select>
+                                @if (_isFacingEMployees)
+                                {
+                                    <button class="btn btn-sm btn-outline-primary">
+
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden"></span>
+                                        </div>
+
+                                    </button>
+                                }
+
+                            }
+
+                            <span class="input-group-text" id="filterDateLabel">Filter by date</span>
+                            <input type="date" class="form-control" placeholder="Filter by Date" aria-label="Date" aria-describedby="filterDateLabel" @onchange="(ChangeEventArgs e)=>ondateCHhange(e)">
+
+
+
+
+
+                            <button type="button" class="btn btn-outline-primary" @onclick="ApplyFilters">Search</button>
+                            <button type="button" class="btn btn-outline-danger" @onclick="()=>{filterDate = null; filterPayDate = null ; ChangePage(currentPage);}">Clear</button>
+                            @if(workerPaymentDetailsBydatesTObeUpdated.Count>0)
+                            {
+                                if (isupdating)
+                                {
+                                    <button class="btn btn-sm btn-outline-primary">
+
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden"></span>
+                                        </div>
+
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-warning" @onclick="update" >Update Hightlighted Rows</button>
+                                }
+                             
+                            }
+
+                        </div>
+                    </form>
+
+                </div>
+
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+
+                @if (!isLoading)
+                {
+                    @if (filteredDetails != null)
+                    {
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Date</th>
+                                    <th>In Time (Actual)</th>
+                                    <th>Out Time (Actual)</th>
+                                    <th>In Time </th>
+                                    <th>Out Time </th>
+                                    <th>On Site</th>
+                                    <th>Break Time</th>
+                                    <th>Overtime</th>
+                                    <th>Actual Hours</th>
+                                    <th>Overtime Extra Hours</th>
+                                    <th>Total Hours</th>
+                                    <th>Rate per Hour</th>
+                                    <th>Total Earned</th>
+
+
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+
+                                @foreach (var w in filteredDetails.OrderByDescending(x => x.Date))
+                                {
+                                    if (workerPaymentDetailsBydatesTObeUpdated.FirstOrDefault(x => x.Id == w.Id) != null)
+                                    {
+                                        <tr class="table-warning">
+                                            <td><h6>@employees?.FirstOrDefault(x => x.Id == w.EmployeeId)?.FirstName @employees?.FirstOrDefault(x => x.Id == w.EmployeeId)?.LastName (@employees?.FirstOrDefault(x => x.Id == w.EmployeeId)?.EmployeeCode)</h6></td>
+                                            <td>@w.Date?.ToString("dd-MM-y")</td>
+                                            @if (SelectedWorkerPaymentDetailsBydate == w)
+                                            {
+                                                <td>
+                                                    <input class="form-control" type="datetime-local" @bind=w.IntimeActual />
+                                                </td>
+                                                <td>
+                                                    <input class="form-control" type="datetime-local" @bind=w.OutTimeActual />
+                                                </td>
+                                            }
+                                            else
+                                            {
+                                                <td>@w.IntimeActual?.ToString("dd-MM-y HH:mm:ss")</td>
+
+                                                <td>@w.OutTimeActual?.ToString("dd-MM-y HH:mm:ss")</td>
+                                            }
+
+
+
+
+
+                                            <td>@w.InTime?.ToString("dd-MM-y HH:mm:ss")</td>
+                                            <td>@w.OutTime?.ToString("dd-MM-y HH:mm:ss")</td>
+                                            <td>@w.OnSite?.ToString(@"hh\:mm\:ss")</td>
+                                            <td>@w.BreakTime?.ToString(@"hh\:mm\:ss")</td>
+                                            <td>@w.OverTime?.ToString(@"hh\:mm\:ss")</td>
+                                            <td>@w.ActualHours?.ToString(@"hh\:mm\:ss")</td>
+                                            <td>@w.OtExtraHours?.ToString(@"hh\:mm\:ss")</td>
+                                            <td>@w.TotalHours?.ToString(@"hh\:mm\:ss")</td>
+                                            <td>@w.RatePerHour?.ToString()</td>
+                                            <td>@w.TotalEarnedOnDate?.ToString()</td>
+
+
+
+
+                                            <td>
+
+                                                @if (SelectedWorkerPaymentDetailsBydate == w)
+                                                {
+                                                    if (iscaluclating)
+                                                    {
+                                                        <button class="btn btn-outline-secondary">
+                                                            <div class="spinner-border" role="status">
+                                                                <span class="visually-hidden">Loading...</span>
+                                                            </div>
+
+
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-outline-secondary" @onclick="()=>caluculate(w.Id)">Calculate</button>
+                                                    }
+
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-outline-secondary" @onclick="()=>onEditClick(w)">Edit</button>
+                                                }
+
+
+
+
+                                            </td>
+
+
+
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td><h6>@employees?.FirstOrDefault(x => x.Id == w.EmployeeId)?.FirstName @employees?.FirstOrDefault(x => x.Id == w.EmployeeId)?.LastName (@employees?.FirstOrDefault(x => x.Id == w.EmployeeId)?.EmployeeCode)</h6></td>
+                                            <td>@w.Date?.ToString("dd-MM-y")</td>
+                                            @if (SelectedWorkerPaymentDetailsBydate == w)
+                                            {
+                                                <td>
+                                                    <input class="form-control" type="datetime-local" @bind=w.IntimeActual />
+                                                </td>
+                                                <td>
+                                                    <input class="form-control" type="datetime-local" @bind=w.OutTimeActual />
+                                                </td>
+                                            }
+                                            else
+                                            {
+                                                <td>@w.IntimeActual?.ToString("dd-MM-y HH:mm:ss")</td>
+
+                                                <td>@w.OutTimeActual?.ToString("dd-MM-y HH:mm:ss")</td>
+                                            }
+
+
+
+
+
+                                            <td>@w.InTime?.ToString("dd-MM-y HH:mm:ss")</td>
+                                            <td>@w.OutTime?.ToString("dd-MM-y HH:mm:ss")</td>
+                                            <td>@w.OnSite?.ToString(@"hh\:mm\:ss")</td>
+                                            <td>@w.BreakTime?.ToString(@"hh\:mm\:ss")</td>
+                                            <td>@w.OverTime?.ToString(@"hh\:mm\:ss")</td>
+                                            <td>@w.ActualHours?.ToString(@"hh\:mm\:ss")</td>
+                                            <td>@w.OtExtraHours?.ToString(@"hh\:mm\:ss")</td>
+                                            <td>@w.TotalHours?.ToString(@"hh\:mm\:ss")</td>
+                                            <td>@w.RatePerHour?.ToString()</td>
+                                            <td>@w.TotalEarnedOnDate?.ToString()</td>
+
+
+
+
+                                            <td>
+
+                                                @if (SelectedWorkerPaymentDetailsBydate == w)
+                                                {
+                                                    if (iscaluclating)
+                                                    {
+                                                        <button class="btn btn-outline-secondary">
+                                                            <div class="spinner-border" role="status">
+                                                                <span class="visually-hidden">Loading...</span>
+                                                            </div>
+
+
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-outline-secondary" @onclick="()=>caluculate(w.Id)">Calculate</button>
+                                                    }
+
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-outline-secondary" @onclick="()=>onEditClick(w)">Edit</button>
+                                                }
+
+
+
+
+                                            </td>
+
+
+
+                                        </tr>
+                                    }
+                                   
+                                }
+                            </tbody>
+                        </table>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination">
+                                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                    <button class="page-link" @onclick="()=>ChangePage(currentPage - 1)">Previous</button>
+                                </li>
+
+                                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                    <button class="page-link" @onclick="()=>ChangePage(currentPage + 1)">Next</button>
+                                </li>
+                            </ul>
+                        </nav>
+                    }
+                    else
+                    {
+                        <h2>Select A Group and a Date</h2>
+                    }
+
+
+                }
+                else
+                {
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                }
+
+
+
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+
+
+
+
+
+</div>
+
+
+
+@code {
+    bool pageloading = true;
+    bool isLoading = false;
+    bool iscaluclating = false;
+    bool isupdating = false;
+
+
+
+    DateOnly? filterDate;
+    bool _isFacingEMployees = false;
+    DateOnly? filterPayDate;
+    List<WorkerPaymentDetailsBydate>? workerPaymentDetailsBydates;
+    List<WorkerPaymentDetailsBydate>? filteredDetails;
+    List<WorkerPaymentDetailsBydate> workerPaymentDetailsBydatesTObeUpdated = new List<WorkerPaymentDetailsBydate>();
+
+    List<Group>? groups;
+    List<EmployeeWithLatestRate>? employeeWithLatestRates;
+    List<Employee>? employees;
+    // Pagination variables
+    int currentPage = 1;
+    int itemsPerPage = 20;
+    int totalPages;
+
+    WorkerPaymentDetailsBydate? SelectedWorkerPaymentDetailsBydate;
+    Group? selectedGroup;
+
+
+
+
+    List<EntryTime> EntryTimeslots = new List<EntryTime>();
+    List<ExitTime> ExitTimeslots = new List<ExitTime>();
+    List<BreakTime> breakTimes = new List<BreakTime>();
+    OvertimeWorkingHour? overtimeWorkingHour;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            groups = await dbcontext.Groups.ToListAsync();
+
+            employeeWithLatestRates = await dbcontext.EmployeeWithLatestRates.ToListAsync();
+        }
+    
+        pageloading = false;
+       
+    }
+
+    async void ondateCHhange(ChangeEventArgs e)
+    {
+        isLoading = true;
+        if (e is not null && e.Value is not null && selectedGroup is not null && employees is not null)
+        {
+            filterDate = DateOnly.Parse(e.Value.ToString());
+            using (sealConsultantContext dbcontext = new sealConsultantContext())
+            {
+                var employeeIds = employees.Select(y => y.Id).ToList();
+                workerPaymentDetailsBydates = await dbcontext.WorkerPaymentDetailsBydates
+                    .Where(x => x.Date == filterDate && x.Paid == false)
+                    .ToListAsync();
+
+                workerPaymentDetailsBydates = workerPaymentDetailsBydates
+                    .Where(x => employeeIds.Contains(x.EmployeeId.Value))
+                    .ToList();
+
+                filteredDetails = workerPaymentDetailsBydates.ToList();
+
+            }
+
+
+        }
+        UpdateCurrentPageData();
+        isLoading = false;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task onEditClick(WorkerPaymentDetailsBydate w)
+    {
+        SelectedWorkerPaymentDetailsBydate = w;
+
+
+        await InvokeAsync(StateHasChanged);
+
+
+    }
+
+
+    private void ApplyFilters()
+    {
+
+
+
+        isLoading = false;
+    }
+
+    private void UpdateCurrentPageData()
+    {
+        filteredDetails = workerPaymentDetailsBydates
+            .Skip((currentPage - 1) * itemsPerPage)
+            .Take(itemsPerPage)
+            .ToList();
+
+        isLoading = false;
+    }
+
+    private void ChangePage(int newPage)
+    {
+        currentPage = newPage;
+        UpdateCurrentPageData();
+    }
+
+    async Task onGroupSelected(Guid id)
+    {
+        _isFacingEMployees = true;
+        await InvokeAsync(StateHasChanged);
+
+        selectedGroup = groups?.FirstOrDefault(x => x.Id == id);
+
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            var existingEmployeesInTheGroup = await dbcontext.GroupEmployees.Where(x => x.GroupId == id).ToListAsync();
+
+            employees = await dbcontext.Employees.Where(x => dbcontext.GroupEmployees.Any(y => y.EmployeId == x.Id)).ToListAsync();
+
+        }
+
+
+
+        _isFacingEMployees = false;
+        await InvokeAsync(StateHasChanged);
+
+
+
+    }
+    //savechage
+    async Task update()
+    {
+        isupdating = true;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            dbcontext.WorkerPaymentDetailsBydates.UpdateRange(workerPaymentDetailsBydatesTObeUpdated);
+            await dbcontext.SaveChangesAsync();
+
+            var employeeIds = employees.Select(y => y.Id).ToList();
+
+            workerPaymentDetailsBydates = await dbcontext.WorkerPaymentDetailsBydates
+                .Where(x => x.Date == filterDate && x.Paid == false)
+                .ToListAsync();
+
+            workerPaymentDetailsBydates = workerPaymentDetailsBydates
+                .Where(x => employeeIds.Contains(x.EmployeeId.Value))
+                .ToList();
+
+            filteredDetails = workerPaymentDetailsBydates.ToList();
+            workerPaymentDetailsBydatesTObeUpdated = new List<WorkerPaymentDetailsBydate>();
+        }
+
+        isupdating = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    //calculation.......................................................................................................................................
+    async void caluculate(Guid WorkerPaymentDetailsId)
+    {
+
+
+        WorkingHourRuleSchema? SelectedSchema;
+
+        var spd = workerPaymentDetailsBydates.FirstOrDefault(x => x.Id == WorkerPaymentDetailsId);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+            SelectedSchema = dbcontext.WorkingHourRuleSchemas.FirstOrDefault(x => spd != null && x.SchemaId == spd.SchemaId);
+
+
+
+
+        }
+
+
+
+        if (SelectedSchema != null)
+        {
+            iscaluclating = true;
+
+            await onRuleSchemaSelected(SelectedSchema);
+
+            // var employee = employees.FirstOrDefault(x => x.Id == spd.EmployeeId);
+
+            if (spd != null && spd.IntimeActual != null && spd.OutTimeActual != null)
+            {
+
+
+
+                foreach (var intime in EntryTimeslots)
+                {
+
+                    if (TimeOnly.FromDateTime(spd.IntimeActual.Value) > intime.StartTine && TimeOnly.FromDateTime(spd.IntimeActual.Value) <= intime.EndTime)
+                    {
+
+                        string Entry = $"{spd.IntimeActual.Value.ToString("MM/dd/yyyy")} {intime.TakenTime}";
+
+                        Console.WriteLine(Entry);
+
+                        spd.InTime = DateTime.Parse(Entry);
+
+
+                    }
+
+
+                }
+
+                foreach (var Outtime in ExitTimeslots)
+                {
+                    if (TimeOnly.FromDateTime(spd.OutTimeActual.Value) > Outtime.StartTine && TimeOnly.FromDateTime(spd.OutTimeActual.Value) <= Outtime.EndTime)
+                    {
+
+                        string Exit = $"{spd.OutTimeActual.Value.Date.ToString("MM/dd/yyyy")} {Outtime.TakenTime}";
+
+                        Console.WriteLine(Exit);
+
+                        spd.OutTime = DateTime.Parse(Exit);
+
+
+                    }
+
+
+                }
+
+                spd.OnSite = spd.OutTime - spd.InTime;
+
+                spd.ActualHours = spd.OnSite;
+
+                spd.BreakTime = new TimeSpan(0, 0, 0, 0);
+                Console.WriteLine($"mew...................................................................................");
+                foreach (var bt in breakTimes)
+                {
+
+
+                    Console.WriteLine($"{bt.StartTime} - {bt.EndTime}");
+
+                    spd.ActualHours = spd.ActualHours - DeductBreakTimeAcrossMultipleDays(spd.InTime, spd.OutTime, bt.StartTime, bt.EndTime);
+
+                    spd.BreakTime = spd.BreakTime + DeductBreakTimeAcrossMultipleDays(spd.InTime, spd.OutTime, bt.StartTime, bt.EndTime);
+
+                    Console.WriteLine($"{DeductBreakTimeAcrossMultipleDays(spd.InTime, spd.OutTime, bt.StartTime, bt.EndTime)}");
+                }
+
+                if (spd.ActualHours > overtimeWorkingHour.StartAfter)
+                {
+                    spd.OverTime = spd.ActualHours - overtimeWorkingHour.StartAfter;
+                }
+                else
+                {
+                    spd.OverTime = new TimeSpan(0, 0, 0, 0);
+                }
+
+
+                spd.OtExtraHours = ConvertTimeSpan(overtimeWorkingHour.IcreamentCount, spd.OverTime) - spd.OverTime;
+
+                spd.TotalHours = spd.ActualHours + spd.OtExtraHours;
+
+                spd.TotalHours = RoundToNearestHalfHour(spd.TotalHours);
+
+                var rate = employeeWithLatestRates.FirstOrDefault(x => x.EmployeeId == spd.EmployeeId);
+
+                if (rate != null && rate.LatestRate != null)
+                {
+                    spd.RatePerHour = (decimal)rate.LatestRate;
+                }
+
+
+                spd.TotalEarnedOnDate = CalculatePayment(spd.TotalHours, spd.RatePerHour);
+
+                SelectedWorkerPaymentDetailsBydate = null;
+
+                iscaluclating = false;
+
+                if (workerPaymentDetailsBydatesTObeUpdated.FirstOrDefault(x => x.Id == spd.Id) == null)
+                {
+                    workerPaymentDetailsBydatesTObeUpdated.Add(spd);
+                }
+
+                await InvokeAsync(StateHasChanged);
+                
+               
+
+            }
+        }
+        else
+        {
+
+        }
+
+
+    }
+
+    async Task onRuleSchemaSelected(WorkingHourRuleSchema? SelectedSchema)
+    {
+
+
+
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            EntryTimeslots = await dbcontext.EntryTimes.Where(x => x.SchemaId == SelectedSchema.SchemaId).ToListAsync();
+            ExitTimeslots = await dbcontext.ExitTimes.Where(x => x.SchemaId == SelectedSchema.SchemaId).ToListAsync();
+            breakTimes = await dbcontext.BreakTimes.Where(x => x.SchemaId == SelectedSchema.SchemaId).ToListAsync();
+            overtimeWorkingHour = await dbcontext.OvertimeWorkingHours.FirstOrDefaultAsync(x => x.SchemaId == SelectedSchema.SchemaId);
+            // await InvokeAsync(StateHasChanged);
+
+        }
+
+
+
+
+
+    }
+
+
+    TimeSpan? RoundToNearestHalfHour(TimeSpan? time)
+    {
+        if (!time.HasValue)
+        {
+            return null; // Return null if the input TimeSpan is null
+        }
+
+        int minutes = time.Value.Minutes;
+        int baseMinutes = (minutes / 30) * 30; // Get the nearest lower multiple of 30
+        int roundedMinutes = minutes % 30 >= 15 ? baseMinutes + 30 : baseMinutes; // Round to nearest 30
+        int additionalHours = roundedMinutes == 60 ? 1 : 0;
+        return new TimeSpan(time.Value.Hours + additionalHours, roundedMinutes % 60, 0);
+    }
+
+
+
+
+
+
+
+
+    decimal? CalculatePayment(TimeSpan? timeWorked, decimal? hourlyRate)
+    {
+        // Check if either parameter is null
+        if (!timeWorked.HasValue || !hourlyRate.HasValue)
+        {
+            // One or both parameters are null, so we cannot calculate the payment
+            return null;
+        }
+
+        // Convert the TimeSpan to total hours as a double, then cast to decimal
+        decimal hoursWorked = (decimal)timeWorked.Value.TotalHours;
+
+        // Calculate the payment
+        decimal payment = hoursWorked * hourlyRate.Value;
+
+        return payment;
+    }
+
+
+
+    TimeSpan? ConvertTimeSpan(TimeSpan? specificTimeSpan, TimeSpan? totalTime)
+    {
+        // Check if any of the parameters is null
+        if (specificTimeSpan == null || totalTime == null)
+        {
+            return null;
+        }
+
+        // Calculate the conversion factor by dividing the total minutes of totalTime by 60 (to convert to hours)
+        double conversionFactor = ((TimeSpan)totalTime).TotalMinutes / 60;
+
+        // Convert the specificTimeSpan hours to the new time span using the conversion factor
+        double newHours = ((TimeSpan)specificTimeSpan).TotalHours * conversionFactor;
+
+        // Convert the fractional hours back to a TimeSpan
+        TimeSpan result = TimeSpan.FromHours(newHours);
+
+        return result;
+    }
+
+    TimeSpan? DeductBreakTimeAcrossMultipleDays(DateTime? inTime, DateTime? outTime, TimeOnly? breakStart, TimeOnly? breakEnd)
+    {
+        // Check for null values and handle them as needed
+        if (!inTime.HasValue || !outTime.HasValue || !breakStart.HasValue || !breakEnd.HasValue)
+        {
+            // Return null or throw an exception or handle it as per your requirement
+            return null; // Indicating that deduction can't be calculated
+        }
+
+        // Initialize totalDeduction
+        TimeSpan totalDeduction = TimeSpan.Zero;
+
+        // The first day's date
+        DateTime currentDate = inTime.Value.Date;
+
+        // Continue until we've covered all days up to and including the outTime's date
+        while (currentDate <= outTime.Value.Date)
+        {
+            // For the first day, use inTime, and for subsequent days, use the start of the day
+            TimeOnly currentDayInTime = currentDate == inTime.Value.Date ? TimeOnly.FromDateTime(inTime.Value) : TimeOnly.MinValue;
+
+            // For the last day, use outTime, and for previous days, use the end of the day
+            TimeOnly currentDayOutTime = currentDate == outTime.Value.Date ? TimeOnly.FromDateTime(outTime.Value) : TimeOnly.MaxValue;
+
+            // Deduct break time for the current day if the work period overlaps with the break time
+            if (!(currentDayOutTime <= breakStart.Value || currentDayInTime >= breakEnd.Value))
+            {
+                if (currentDayInTime <= breakStart.Value && currentDayOutTime >= breakEnd.Value)
+                {
+                    // Deduct entire break duration
+                    totalDeduction += breakEnd.Value - breakStart.Value;
+                }
+                else if (currentDayInTime >= breakStart.Value && currentDayOutTime <= breakEnd.Value)
+                {
+                    // Deduct the duration between in-time and out-time
+                    totalDeduction += currentDayOutTime - currentDayInTime;
+                }
+                else if (currentDayInTime <= breakStart.Value && currentDayOutTime <= breakEnd.Value)
+                {
+                    // Deduct the duration between breakStart and out-time
+                    totalDeduction += currentDayOutTime - breakStart.Value;
+                }
+                else if (currentDayInTime >= breakStart.Value && currentDayOutTime >= breakEnd.Value)
+                {
+                    // Deduct the duration between in-time and breakEnd
+                    totalDeduction += breakEnd.Value - currentDayInTime;
+                }
+            }
+
+            // Move to the next day
+            currentDate = currentDate.AddDays(1);
+        }
+
+        return totalDeduction;
+    }
+
+
+
+    string FormatTimeSpanAsHoursAndMinutes(TimeSpan? timeSpan)
+    {
+        // Check if the input is null
+        if (!timeSpan.HasValue)
+        {
+            return ""; // Or any other default value you prefer
+        }
+
+        // Calculate total hours and get minutes from the non-null TimeSpan
+        int totalHours = (int)Math.Floor(timeSpan.Value.TotalHours);
+        int minutes = timeSpan.Value.Minutes;
+
+        // Format and return the string
+        return $"{totalHours:00}:{minutes:00}";
+    }
+
+
+
+}

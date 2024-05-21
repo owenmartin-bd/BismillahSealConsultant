@@ -1,0 +1,122 @@
+﻿@page "/applicationManagement"
+@using BismillahSealConsultant.Componants
+
+@if (loading)
+{
+    <Chase></Chase>
+}
+else
+{
+
+    @if (logger.checkAccess("/applicationManagement", rollId))
+    {
+        <div class="container-fluid">
+            <ul class="nav nav-tabs">
+                <li class="nav-item nav-item-fix">
+                    <button class="nav-link @tabs["Applicants"]" @onclick="@(()=>{
+
+                    foreach(var tabkey in tabs.Keys.ToList()){
+
+                        tabs[tabkey] ="";
+
+                    }
+
+                    tabs["Applicants"]="active";
+
+                    StateHasChanged();
+
+                })">
+                        Applicants
+                    </button>
+                </li>
+                <li class="nav-item nav-item-fix">
+                    <button class="nav-link @tabs["Management"]" @onclick="@(()=>{
+
+                    foreach(var tabkey in tabs.Keys.ToList()){
+
+                        tabs[tabkey] ="";
+
+                    }
+
+                    tabs["Management"]="active";
+
+                    StateHasChanged();
+
+                })">
+                        Management
+                    </button>
+                </li>
+
+            </ul>
+
+
+            @if (tabs["Applicants"] == "active")
+            {
+                <Applicants>
+
+                </Applicants>
+            }
+
+            else if (tabs["Management"] == "active")
+            {
+                <div class="row">
+                    <div class="col">
+                        <Addskill></Addskill>
+                    </div>
+                    <div class="col">
+                        <AddIndustry></AddIndustry>
+                    </div>
+                </div>
+            }
+
+
+
+
+
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+
+}
+
+
+
+
+
+@code {
+    Dictionary<string, string> tabs = new Dictionary<string, string>();
+    bool loading = true;
+
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+            tabs.Add("Applicants", "active");
+            tabs.Add("Management", "");
+
+            rollId = await localStorage.GetItemAsync<string>("Roll");
+
+        }
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

@@ -1,0 +1,425 @@
+﻿@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject NavigationManager nav
+
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="" style="font-size:1.2rem !important;font-family:cursive;padding-top:5px !important"><img style="height:1.5rem;padding-right:5px" src="logo.jpg" class="img-fluid rounded-1" /> sealconsult </a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Dashboard
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/announcement" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Announcement
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/applog" Match="NavLinkMatch.All">
+                <span class="oi oi-timer" aria-hidden="true"></span> Log
+            </NavLink>
+        </div>
+
+        @if (collapseEmployee)
+        {
+            <div class="nav-item px-3">
+                <NavLink style="border: 1px solid #5B6272;" class="nav-link" @onclick="()=>collapseEmployee = !collapseEmployee">
+                    <span class="oi oi-people" aria-hidden="true"></span> Employees <i class="arrow up"></i>
+                </NavLink>
+            </div>
+        }
+        else
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" @onclick="()=>collapseEmployee = !collapseEmployee">
+                    <span class="oi oi-people" aria-hidden="true"></span> Employees <i class="arrow down"></i>
+                </NavLink>
+            </div>
+        }
+
+
+
+        @if (collapseEmployee)
+        {
+            <Animate Animation="Animations.FlipUp" Duration="TimeSpan.FromSeconds(0.5)" Delay="TimeSpan.FromSeconds(0)">
+                <div class="bg-dark bg-border p-1 m-2 rounded-2">
+
+                    <div class="nav-item px-3 ">
+                        <NavLink class="nav-link" href="/addemployee" Match="NavLinkMatch.All">
+                            <span class="oi oi-plus" aria-hidden="true"></span> New Employee
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3 ">
+                        <NavLink class="nav-link" href="/employees" Match="NavLinkMatch.All">
+                            <span class="oi oi-person" aria-hidden="true"></span> Employees List
+                        </NavLink>
+                    </div>
+
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/leave" Match="NavLinkMatch.All">
+                            <span class="oi oi-account-logout" aria-hidden="true"></span> Leave
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/addpossitions" Match="NavLinkMatch.All">
+                            <span class="iconify " data-icon="mdi:user-switch" aria-hidden="true"></span>Positions
+                        </NavLink>
+                    </div>
+
+                </div>
+            </Animate>
+        }
+
+      @*   @if (collapsePayrollStuff)
+        {
+            <div class="nav-item px-3">
+                <NavLink style="border: 1px solid #5B6272;" class="nav-link" @onclick="()=>collapsePayrollStuff = !collapsePayrollStuff">
+                    <span class="oi oi-dollar" aria-hidden="true"></span> Stuff Payroll <i class="arrow up"></i>
+                </NavLink>
+            </div>
+        }
+        else
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" @onclick="()=>collapsePayrollStuff = !collapsePayrollStuff">
+                    <span class="oi oi-dollar" aria-hidden="true"></span> Stuff Payroll <i class="arrow down"></i>
+                </NavLink>
+            </div>
+        }
+
+
+
+        @if (collapsePayrollStuff)
+        {
+            <Animate Animation="Animations.FlipUp" Duration="TimeSpan.FromSeconds(0.5)" Delay="TimeSpan.FromSeconds(0)">
+                <div class="bg-dark bg-border p-1 m-2 rounded-2">
+                    <div class="nav-item  px-3">
+                        <NavLink class="nav-link" href="/makePayment" Match="NavLinkMatch.All">
+                            <span class="iconify" data-icon="ic:baseline-paypal" aria-hidden="true"></span> Make Payroll
+                        </NavLink>
+                    </div>
+
+                    <div class="nav-item sub-nav-item  px-3">
+                        <NavLink class="nav-link " href="/stuffSalary" Match="NavLinkMatch.All">
+                            <span class="iconify sub-iconify" data-icon="ic:baseline-payment" aria-hidden="true"></span> Projected Stuffs Salaray
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/stuffPayrollDispose" Match="NavLinkMatch.All">
+                            <span class="oi oi-task" aria-hidden="true"></span> Salary Dispatch
+                        </NavLink>
+                    </div>
+
+
+                </div>
+            </Animate>
+        } *@
+
+        
+        @if (collapsePayrollWorker)
+        {
+        <div class="nav-item px-3">
+        <NavLink style="border: 1px solid #5B6272;" class="nav-link" @onclick="()=>collapsePayrollWorker = !collapsePayrollWorker">
+        <span class="oi oi-dollar" aria-hidden="true"></span> Worker Payments <i class="arrow up"></i>
+        </NavLink>
+        </div>
+        }
+        else
+        {
+        <div class="nav-item px-3">
+        <NavLink class="nav-link" @onclick="()=>collapsePayrollWorker = !collapsePayrollWorker">
+        <span class="oi oi-dollar" aria-hidden="true"></span> Worker Payments <i class="arrow down"></i>
+        </NavLink>
+        </div>
+        }
+       
+
+
+
+
+        @if (collapsePayrollWorker)
+        {
+            <Animate Animation="Animations.FlipUp" Duration="TimeSpan.FromSeconds(0.5)" Delay="TimeSpan.FromSeconds(0)">
+                <div class="bg-dark bg-border p-1 m-2 rounded-2">
+
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/AttendanceRules" Match="NavLinkMatch.All">
+                            <span class="oi oi-clipboard" aria-hidden="true"></span> Attendance Rules
+                        </NavLink>
+                    </div>
+
+
+
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/AttendanceManual" Match="NavLinkMatch.All">
+                            <span class="oi oi-clipboard" aria-hidden="true"></span> Manual Attendance
+                        </NavLink>
+                    </div>
+
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/UpdateAtt" Match="NavLinkMatch.All">
+                            <span class="oi oi-clipboard" aria-hidden="true"></span> Attendance Update
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/payday" Match="NavLinkMatch.All">
+                            <span class="oi oi-clipboard" aria-hidden="true"></span> Payments
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/EmployeeGroups" Match="NavLinkMatch.All">
+                            <span class="oi oi-clipboard" aria-hidden="true"></span> Groups
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/advancePayment" Match="NavLinkMatch.All">
+                            <span class="oi oi-clipboard" aria-hidden="true"></span> Advance
+                        </NavLink>
+                    </div>
+
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/attendence" Match="NavLinkMatch.All">
+                            <span class="oi oi-clipboard" aria-hidden="true"></span> Finger Attendance
+                        </NavLink>
+                    </div>
+
+
+                    @*   <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/EditAttendance" Match="NavLinkMatch.All">
+                <span class="oi oi-clipboard" aria-hidden="true"></span> Edit Attendance
+                </NavLink>
+                </div> *@
+
+
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/correction_req" Match="NavLinkMatch.All">
+                            <span class="oi oi-clipboard" aria-hidden="true"></span> Correction Req
+                        </NavLink>
+                    </div>
+                    @*
+                <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/extrahours" Match="NavLinkMatch.All">
+                <span class="oi oi-clock" aria-hidden="true"></span> Add Extra Hours
+                </NavLink>
+                </div>
+                <div class="nav-item  px-3">
+                <NavLink class="nav-link" href="/setrate" Match="NavLinkMatch.All">
+                <span class="iconify " data-icon="mdi:account-clock-outline" aria-hidden="true"></span> Set Hourly Rate
+                </NavLink>
+                </div>
+
+                <div class="nav-item sub-nav-item px-3">
+                <NavLink class="nav-link" href="/setSalaryWorkerDeductions" Match="NavLinkMatch.All">
+                <span class="iconify sub-iconify" data-icon="material-symbols:credit-score-sharp" aria-hidden="true"></span> Allowance & Deductions
+                </NavLink>
+                </div>
+                <div class="nav-item sub-nav-item px-3">
+                <NavLink class="nav-link" href="/workersalary" Match="NavLinkMatch.All">
+                <span class="iconify sub-iconify" data-icon="ic:baseline-payment" aria-hidden="true"></span> Projected Worker Salary
+                </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/chart" Match="NavLinkMatch.All">
+                <span class="oi oi-clipboard" aria-hidden="true"></span> Set Chart
+                </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/ditchpatchPayroll" Match="NavLinkMatch.All">
+                <span class="oi oi-task" aria-hidden="true"></span> Salary Dispatch
+                </NavLink>
+                </div>
+                *@
+                </div>
+            </Animate>
+        }
+
+        @if (collapsePayrollReport)
+        {
+
+            <div class="nav-item px-3">
+                <NavLink style="border: 1px solid #5B6272;" class="nav-link" @onclick="()=>collapsePayrollReport = !collapsePayrollReport">
+                    <span class="oi oi-file" aria-hidden="true"></span> Reports <i class="arrow up"></i>
+                </NavLink>
+            </div>
+        }
+        else
+        {
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" @onclick="()=>collapsePayrollReport = !collapsePayrollReport">
+                    <span class="oi oi-file" aria-hidden="true"></span> Reports <i class="arrow down"></i>
+                </NavLink>
+            </div>
+        }
+
+
+        @*
+        @if (collapsePayrollReport)
+        {
+        <Animate Animation="Animations.FlipUp" Duration="TimeSpan.FromSeconds(0.5)" Delay="TimeSpan.FromSeconds(0)">
+        <div class="bg-dark bg-border p-1 m-2 rounded-2">
+        <div class="nav-item px-3">
+        <NavLink class="nav-link" href="/IndividualSalary" Match="NavLinkMatch.All">
+        <span class="iconify" data-icon="material-symbols:edit-calendar" aria-hidden="true"></span> Salary By Month
+        </NavLink>
+        </div>
+        <div class="nav-item   px-3">
+        <NavLink class="nav-link" href="/SalarayReport" Match="NavLinkMatch.All">
+        <span class="iconify" data-icon="mdi:user-card-details-outline" aria-hidden="true"></span> Salary By Worker
+        </NavLink>
+        </div>
+        <div class="nav-item sub-nav-item px-3">
+        <NavLink class="nav-link " href="/workersalary" Match="NavLinkMatch.All">
+        <span class="iconify sub-iconify" data-icon="ic:baseline-payment" aria-hidden="true"></span> Projected Worker Salary
+        </NavLink>
+        </div>
+        <div class="nav-item sub-nav-item px-3">
+        <NavLink class="nav-link" href="/stuffSalary" Match="NavLinkMatch.All">
+        <span class="iconify sub-iconify" data-icon="ic:baseline-payment" aria-hidden="true"></span> Projected Stuffs Salaray
+        </NavLink>
+        </div>
+
+        </div>
+        </Animate>
+        }
+
+        @if (collapseadvanded)
+        {
+
+        <div class="nav-item px-3">
+        <NavLink style="border: 1px solid #5B6272;" class="nav-link" @onclick="()=>collapseadvanded = !collapseadvanded">
+        <span class="oi oi-file" aria-hidden="true"></span> Advance <i class="arrow up"></i>
+        </NavLink>
+        </div>
+        }
+        else
+        {
+
+        <div class="nav-item px-3">
+        <NavLink class="nav-link" @onclick="()=>collapseadvanded = !collapseadvanded">
+        <span class="oi oi-file" aria-hidden="true"></span> Advance <i class="arrow down"></i>
+        </NavLink>
+        </div>
+        }
+
+
+        @if (collapseadvanded)
+        {
+        <Animate Animation="Animations.FlipUp" Duration="TimeSpan.FromSeconds(0.5)" Delay="TimeSpan.FromSeconds(0)">
+        <div class="bg-dark bg-border p-1 m-2 rounded-2">
+        <div class="nav-item px-3">
+        <NavLink class="nav-link" href="/requestAdvance" Match="NavLinkMatch.All">
+        <span class="oi oi-terminal" aria-hidden="true"></span> Advance Request
+        </NavLink>
+        </div>
+
+
+        <div class="nav-item px-3">
+        <NavLink class="nav-link" href="/AdvanceApprove" Match="NavLinkMatch.All">
+        <span class="oi oi-terminal" aria-hidden="true"></span> Advance Approval
+        </NavLink>
+        </div>
+        </div>
+        </Animate>
+        }
+        *@
+
+
+        @*    <div class="nav-item px-3">
+        <NavLink class="nav-link" href="/print" Match="NavLinkMatch.All">
+        <span class="oi oi-print" aria-hidden="true"></span> Print
+        </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+        <NavLink class="nav-link" href="/log" Match="NavLinkMatch.All">
+        <span class="oi oi-spreadsheet" aria-hidden="true"></span> Log
+        </NavLink>
+        </div> *@
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/bulk" Match="NavLinkMatch.All">
+                <span class="oi oi-people" aria-hidden="true"></span> Bulk User Creation
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/projects" Match="NavLinkMatch.All">
+                <span class="oi oi-spreadsheet" aria-hidden="true"></span> Projects
+            </NavLink>
+        </div>
+
+
+
+
+        <div class="nav-item p-3">
+            <NavLink class="nav-link d-grid gap-2 p-1" Match="NavLinkMatch.All">
+                <button type="button" class="btn btn-danger" @onclick="logout">Logout</button>
+            </NavLink>
+        </div>
+
+
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    bool collapseEmployee = false;
+
+    bool collapsePayrollStuff = false;
+
+    bool collapsePayrollWorker = false;
+
+    bool collapsePayrollReport = false;
+
+    bool collapseadvanded = false;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    async Task logout()
+    {
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            var Userid = await localStorage.GetItemAsync<Guid>("ID");
+
+            Employee? e = await dbcontext.Employees.FindAsync(Userid);
+
+            // Log log = new Log()
+            //     {
+            //         Item = $"{e.FirstName} {e.LastName} {e.IcPp} has logged in at",
+            //         DateTime = DateTime.Now
+            //     };
+
+            //   dbcontext.Logs.Add(log);
+
+            await dbcontext.SaveChangesAsync();
+
+        }
+
+
+        await localStorage.ClearAsync();
+        nav.NavigateTo("/", forceLoad: true);
+
+
+
+
+        await InvokeAsync(StateHasChanged);
+
+    }
+}

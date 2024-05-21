@@ -1,0 +1,1042 @@
+﻿@page "/IndividualSalary"
+@using System.Globalization
+@inject IWebHostEnvironment _enviournment;
+
+@inject IJSRuntime jsRuntime
+
+
+
+@if (loading)
+{
+
+    <Chase style="margin-left:45%; margin-top: 45vh;"></Chase>
+
+}
+else
+{
+    @if (logger.checkAccess("/IndividualSalary", rollId))
+    {
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-2 shadow-lg p-1">
+
+                    <div class="row">
+                        <div class="col-12 bg-opacity-75 bg-gradient" style="padding-top:10px; padding-bottom:10px">
+                            <Animate Animation="Animations.ZoomIn" Duration="TimeSpan.FromSeconds(0.5)" Delay="TimeSpan.FromSeconds(0)">
+                                <input class="form-control" type="text" @oninput="@((ChangeEventArgs __e) =>searchEmployee( __e?.Value?.ToString()) )" placeholder="Search Employees" />
+
+
+                            </Animate>
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+                    <div class="row">
+                        <div class="col-12 employe-list-scroll" style="overflow-y:auto; height:85vh">
+                            <Animate Animation="Animations.SlideUp" Duration="TimeSpan.FromSeconds(1)" Delay="TimeSpan.FromSeconds(0)">
+                                <div class="p-2 mb-3 bg-info text-white " style="background-color:#17A2B8 !important;"><h6>Select an Employee From Bellow</h6></div>
+
+                                <table class="table table-secondary table-responsive table-striped table-hover employee-list table-sm ">
+                                    <thead class="sticky-top">
+                                        <tr class="sticky-table-header">
+
+
+
+                                            <th>
+                                                Name
+                                            </th>
+                                            <th>
+                                                IC/PP
+                                            </th>
+                                            <th>
+                                                Code
+                                            </th>
+
+
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        @foreach (var e in employeeListSearched)
+                                        {
+                                            @if (SelectedEmployee != null && SelectedEmployee == e)
+                                            {
+                                                <tr class="table-primary" @onclick="()=>{SelectedEmployee =null; distchpatchFields = null;}">
+
+
+
+
+                                                    <td style="font-size:13px">
+                                                        @e.FirstName&nbsp;@e.LastName
+                                                    </td>
+                                                    <td style="font-size:13px">
+                                                        @e.IcPp
+                                                    </td>
+                                                    <td style="font-size:13px">
+                                                        @e.EmployeeCode
+                                                    </td>
+
+
+
+                                                </tr>
+                                            }
+                                            else
+                                            {
+
+                                                <tr @onclick="@(async()=>{SelectedEmployee = e;distchpatchFields = null;})">
+
+
+
+                                                    <td style="font-size:13px">
+                                                        @e.FirstName&nbsp;@e.LastName
+                                                    </td>
+                                                    <td style="font-size:13px">
+                                                        @e.IcPp
+                                                    </td>
+                                                    <td style="font-size:13px">
+                                                        @e.EmployeeCode
+                                                    </td>
+
+
+                                                </tr>
+
+                                            }
+
+                                        }
+
+                                    </tbody>
+                                </table>
+                            </Animate>
+
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+
+
+
+
+                </div>
+
+                <div class="col">
+
+
+                    @*.......................................................... date selection..........................................................................................*@
+                    <div class="row">
+
+                        <div class="col-6">
+                            Select "Since" month and "To" Month to generate the report
+                            <div class="input-group p-2">
+                                <span class="input-group-text" id="basic-addon1"> Since </span>
+                                <input type="month" class="form-control" @bind="since">
+
+                                <span class="input-group-text" id="basic-addon1"> To </span>
+                                <input type="month" class="form-control" @bind="to">
+
+
+
+
+
+                                @if (SelectedEmployee != null)
+                                {
+                                    <button class="btn btn-primary" @onclick="generateReport">Generate Report For @employees.FirstOrDefault(x=>x.Id == SelectedEmployee.Id).FirstName @employees.FirstOrDefault(x=>x.Id == SelectedEmployee.Id).LastName </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-primary" @onclick="generateReport">Generate Report For All</button>
+                                }
+
+                                <button class="btn btn-dark" @onclick="makeCsv">
+                                    <span class="oi oi-spreadsheet" aria-hidden="true"></span> Export to csv
+                                </button>
+
+
+                            </div>
+
+                        </div>
+                        <div class="col-2" style="padding-top:20px">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" @bind="earningDetails" id="flexSwitchCheckDefault">
+                                <label class="form-check-label" for="flexSwitchCheckDefault">Earnings</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" @bind="deductionDetails" id="flexSwitchCheckDefault">
+                                <label class="form-check-label" for="flexSwitchCheckDefault">Deductions</label>
+                            </div>
+                        </div>
+
+                        @if (distchpatchFields != null)
+                        {
+                            <div class="col-4 p-1">
+                                <table class="table table-secondary">
+                                    <thead>
+                                        <tr>
+
+                                            <th>
+                                                Month
+                                            </th>
+
+
+                                            <th class="table-success">
+                                                Total Earning
+                                            </th>
+
+
+                                            <th class="table-danger">
+                                                Total Deduction
+                                            </th>
+                                            <th>
+                                                Grand Total
+                                            </th>
+
+
+                                        </tr>
+
+                                    </thead>
+
+
+                                    <tbody>
+                                        @for (DateOnly idate = since; idate <= to; idate = idate.AddMonths(1))
+                                        {
+
+                                            <tr>
+                                                <td>@idate.ToString("MMMM, yyyy")</td>
+
+
+
+
+                                                <td class="table-success" style="text-align: right;">
+                                                    @distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning == true).Select(x=>x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)
+
+                                                </td>
+
+
+
+                                                <td class="table-danger" style="text-align: right;">
+                                                    @distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true).Select(x=>x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)
+
+
+                                                </td>
+                                                <td class="table-primary" style="text-align: right;">
+                                                    @((distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning == true).Select(x => x.Amount).Sum() - distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true).Select(x => x.Amount).Sum())?.ToString("F", CultureInfo.InvariantCulture))
+
+                                                </td>
+                                            </tr>
+
+
+
+
+                                        }
+
+                                        <tr>
+
+                                            <th>
+
+                                            </th>
+
+
+                                            <th class="table-success" style="text-align: right;">
+                                                @distchpatchFields.Where(x => x.Month.Value >= since && x.Month<=to && x.Isearning == true).Select(x=>x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)
+                                            </th>
+
+
+                                            <th class="table-danger" style="text-align: right;">
+                                                @distchpatchFields.Where(x => x.Month.Value >= since && x.Month<=to && x.Isearning != true).Select(x=>x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)
+                                            </th>
+
+
+
+
+
+
+                                            <th style="text-align: right;">
+                                                @(
+                                                    (distchpatchFields.Where(x => x.Month.Value >= since && x.Month <= to && x.Isearning == true).Select(x => x.Amount).Sum()
+                                                    - @distchpatchFields.Where(x => x.Month.Value >= since && x.Month <= to && x.Isearning != true).Select(x => x.Amount).Sum())?.ToString("F", CultureInfo.InvariantCulture)
+                                                    )
+
+
+                                            </th>
+                                        </tr>
+
+                                    </tbody>
+
+                                </table>
+                            </div>
+                        }
+
+
+
+
+                    </div>
+
+                    @*.......................................................... date selection..........................................................................................*@
+
+                    <div class="row">
+                        @if (distchpatchFields != null)
+                        {
+                            <div class="col">
+                                @if (isgettingdata)
+                                {
+                                    <Chase></Chase>
+                                }
+                                else
+                                {
+                                    @*.......................................................... Individual selection..........................................................................................*@
+                                    if (SelectedEmployee != null)
+                                    {
+                                        <table class="table table-secondary">
+                                            <thead>
+                                                <tr>
+
+                                                    <th>
+                                                        Month
+                                                    </th>
+                                                    @if (earningDetails)
+                                                    {
+                                                        <th class="table-success">
+                                                            Earning
+                                                        </th>
+                                                    }
+
+                                                    <th class="table-success">
+                                                        Total Earning
+                                                    </th>
+                                                    @if (deductionDetails)
+                                                    {
+                                                        <th class="table-danger">
+                                                            Deduction
+                                                        </th>
+                                                    }
+
+                                                    <th class="table-danger">
+                                                        Total Deduction
+                                                    </th>
+                                                    <th>
+                                                        Total
+                                                    </th>
+                                                    <th>
+                                                        Paid
+                                                    </th>
+                                                    <th>
+                                                        Company Cost
+                                                    </th>
+                                                </tr>
+
+                                            </thead>
+                                            <tbody>
+                                                @for (DateOnly idate = since; idate <= to; idate = idate.AddMonths(1))
+                                                {
+
+                                                    <tr>
+                                                        <td>@idate.ToString("MMMM, yyyy")</td>
+
+                                                        @if (earningDetails)
+                                                        {
+                                                            <td>
+                                                                <table class="table table-success">
+
+                                                                    <tbody>
+                                                                        @foreach (var data in distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning == true))
+                                                                        {
+
+
+                                                                            <tr>
+
+
+
+                                                                                <td>
+                                                                                    @data.Name
+                                                                                </td>
+                                                                                <td style="text-align: right;">
+                                                                                    @data.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                                                </td>
+                                                                            </tr>
+
+
+                                                                        }
+
+                                                                    </tbody>
+                                                                </table>
+
+                                                            </td>
+                                                        }
+
+
+                                                        <td class="table-success" style="text-align: right;">
+                                                            @distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning == true).Select(x=>x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)
+
+                                                        </td>
+                                                        @if (deductionDetails)
+                                                        {
+                                                            <td>
+                                                                <table class="table table-danger">
+
+                                                                    <tbody>
+                                                                        @foreach (var data in distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true))
+                                                                        {
+
+
+                                                                            <tr>
+                                                                                <td>
+                                                                                    @data.Name
+                                                                                </td>
+                                                                                <td style="text-align: right;">
+                                                                                    @data.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                                                </td>
+                                                                            </tr>
+
+
+                                                                        }
+
+                                                                    </tbody>
+                                                                </table>
+
+                                                            </td>
+
+
+                                                        }
+
+
+                                                        <td class="table-danger" style="text-align: right;">
+                                                            @distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true).Select(x=>x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)
+
+
+                                                        </td>
+                                                        @*   <td class="table-primary" style="text-align: right;">
+                                @((distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning == true).Select(x => x.Amount).Sum() - distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true).Select(x => x.Amount).Sum())?.ToString("F", CultureInfo.InvariantCulture))
+
+                                </td>*@
+                                                        <td class="table-primary">
+                                                            @depatches.FirstOrDefault(x=>x.EmplyeeId == SelectedEmployee?.Id && x.Month==idate)?.TotalAmount?.ToString("F", CultureInfo.InvariantCulture)
+                                                        </td>
+                                                        <td class="table-warning">
+                                                            @depatches.FirstOrDefault(x=>x.EmplyeeId == SelectedEmployee?.Id&& x.Month==idate)?.ActualAmount?.ToString("F", CultureInfo.InvariantCulture)
+                                                        </td>
+                                                        <td class="table-info">
+                                                            @depatches.FirstOrDefault(x=>x.EmplyeeId == SelectedEmployee?.Id&& x.Month==idate)?.CompanyCost?.ToString("F", CultureInfo.InvariantCulture)
+                                                        </td>
+
+                                                    </tr>
+
+
+
+
+                                                }
+
+                                                <tr>
+
+                                                    <th>
+
+                                                    </th>
+                                                    @if (earningDetails)
+                                                    {
+                                                        <th class="table-success">
+
+                                                        </th>
+                                                    }
+
+                                                    <th class="table-success" style="text-align: right;">
+                                                        @distchpatchFields.Where(x => x.Month.Value >= since && x.Month<=to && x.Isearning == true).Select(x=>x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)
+                                                    </th>
+                                                    @if (deductionDetails)
+                                                    {
+                                                        <th class="table-danger">
+
+                                                        </th>
+                                                    }
+
+                                                    <th class="table-danger" style="text-align: right;">
+                                                        @distchpatchFields.Where(x => x.Month.Value >= since && x.Month<=to && x.Isearning != true).Select(x=>x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)
+                                                    </th>
+                                                    <th style="text-align: right;">
+                                                        @(
+                                                            (distchpatchFields.Where(x => x.Month.Value >= since && x.Month <= to && x.Isearning == true).Select(x => x.Amount).Sum()
+                                                            - @distchpatchFields.Where(x => x.Month.Value >= since && x.Month <= to && x.Isearning != true).Select(x => x.Amount).Sum())?.ToString("F", CultureInfo.InvariantCulture)
+                                                            )
+                                                    </th>
+                                                </tr>
+
+                                            </tbody>
+
+                                        </table>
+                                    }
+                                    @*.......................................................... Individual selection..........................................................................................*@
+                                    else
+                                    {
+                                        @*.......................................................... Alll selection..........................................................................................*@
+
+                                        <table class="table table-light">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>IC/PP</th>
+                                                    <th>Code</th>
+
+                                                    <th>Break Down</th>
+                                                </tr>
+                                            </thead>
+
+
+                                            @foreach (Employee e in employees)
+                                            {
+
+                                                <tbody>
+                                                    <tr>
+
+                                                        <td style="font-size:13px">
+                                                            @e.FirstName&nbsp;@e.LastName
+                                                        </td>
+                                                        <td style="font-size:13px">
+                                                            @e.IcPp
+                                                        </td>
+                                                        <td style="font-size:13px">
+                                                            @e.EmployeeCode
+                                                        </td>
+                                                        <td>
+                                                            <table class="table table-secondary">
+                                                                <thead>
+                                                                    <tr>
+
+                                                                        <th>
+                                                                            Month
+                                                                        </th>
+                                                                        @if (earningDetails)
+                                                                        {
+                                                                            <th class="table-success">
+                                                                                Earning
+                                                                            </th>
+                                                                        }
+
+                                                                        <th class="table-success">
+                                                                            Total Earning
+                                                                        </th>
+                                                                        @if (deductionDetails)
+                                                                        {
+                                                                            <th class="table-danger">
+                                                                                Deduction
+                                                                            </th>
+                                                                        }
+
+                                                                        <th class="table-danger">
+                                                                            Total Deduction
+                                                                        </th>
+                                                                        <th>
+                                                                            Grand Total
+                                                                        </th>
+                                                                        <th>
+                                                                            Paid
+                                                                        </th>
+                                                                        <th>
+                                                                            Company Cost
+                                                                        </th>
+
+                                                                    </tr>
+
+                                                                </thead>
+                                                                <tbody>
+                                                                    @for (DateOnly idate = since; idate <= to; idate = idate.AddMonths(1))
+                                                                    {
+
+                                                                        <tr>
+                                                                            <td>@idate.ToString("MMMM, yyyy")</td>
+
+                                                                            @if (earningDetails)
+                                                                            {
+                                                                                <td>
+                                                                                    <table class="table table-success">
+
+                                                                                        <tbody>
+                                                                                            @foreach (var data in distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning == true && x.EmplyeeId == e.Id))
+                                                                                            {
+
+
+                                                                                                <tr>
+
+
+
+                                                                                                    <td>
+                                                                                                        @data.Name
+                                                                                                    </td>
+                                                                                                    <td style="text-align: right;">
+                                                                                                        @data.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                                                                    </td>
+                                                                                                </tr>
+
+
+                                                                                            }
+
+                                                                                        </tbody>
+                                                                                    </table>
+
+                                                                                </td>
+                                                                            }
+
+
+                                                                            <td class="table-success" style="text-align: right;">
+                                                                                RM @distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning == true && x.EmplyeeId==e.Id).Select(x=>x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)
+
+                                                                            </td>
+                                                                            @if (deductionDetails)
+                                                                            {
+                                                                                <td>
+                                                                                    <table class="table table-danger">
+
+                                                                                        <tbody>
+                                                                                            @foreach (var data in distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true && x.EmplyeeId == e.Id))
+                                                                                            {
+
+
+                                                                                                <tr>
+                                                                                                    <td>
+                                                                                                        @data.Name
+                                                                                                    </td>
+                                                                                                    <td style="text-align: right;">
+                                                                                                        @data.Amount?.ToString("F", CultureInfo.InvariantCulture)
+                                                                                                    </td>
+                                                                                                </tr>
+
+
+                                                                                            }
+
+                                                                                        </tbody>
+                                                                                    </table>
+
+                                                                                </td>
+
+
+                                                                            }
+
+
+                                                                            <td class="table-danger" style="text-align: right;">
+                                                                                @distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true && x.EmplyeeId==e.Id).Select(x=>x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)
+
+
+                                                                            </td>
+
+
+
+
+                                                                            <td class="table-primary">
+                                                                                @depatches.FirstOrDefault(x=>x.EmplyeeId == e.Id && x.Month == idate)?.TotalAmount?.ToString("F", CultureInfo.InvariantCulture)
+                                                                            </td>
+                                                                            <td class="table-warning">
+                                                                                @depatches.FirstOrDefault(x=>x.EmplyeeId == e.Id && x.Month == idate)?.ActualAmount?.ToString("F", CultureInfo.InvariantCulture)
+                                                                            </td>
+                                                                            <td class="table-info">
+                                                                                @depatches.FirstOrDefault(x=>x.EmplyeeId == e.Id && x.Month == idate)?.CompanyCost?.ToString("F", CultureInfo.InvariantCulture)
+                                                                            </td>
+
+
+                                                                        </tr>
+
+
+
+
+                                                                    }
+
+                                                                    <tr>
+
+                                                                        <th>
+
+                                                                        </th>
+                                                                        @if (earningDetails)
+                                                                        {
+                                                                            <th class="table-success">
+
+                                                                            </th>
+                                                                        }
+
+                                                                        <th class="table-success" style="text-align: right;">
+                                                                            @distchpatchFields.Where(x => x.Month.Value >= since && x.Month<=to && x.Isearning == true && x.EmplyeeId==e.Id).Select(x=>x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)
+                                                                        </th>
+                                                                        @if (deductionDetails)
+                                                                        {
+                                                                            <th class="table-danger">
+
+                                                                            </th>
+                                                                        }
+
+                                                                        <th class="table-danger" style="text-align: right;">
+                                                                            @distchpatchFields.Where(x => x.Month.Value >= since && x.Month<=to && x.Isearning != true && x.EmplyeeId==e.Id).Select(x=>x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)
+                                                                        </th>
+                                                                        <th style="text-align: right;">
+                                                                            @(
+                                                                                (distchpatchFields.Where(x => x.Month.Value >= since && x.Month <= to && x.Isearning == true && x.EmplyeeId == e.Id).Select(x => x.Amount).Sum()
+                                                                                - @distchpatchFields.Where(x => x.Month.Value >= since && x.Month <= to && x.Isearning != true && x.EmplyeeId == e.Id).Select(x => x.Amount).Sum())?.ToString("F", CultureInfo.InvariantCulture)
+                                                                                )
+                                                                        </th>
+                                                                    </tr>
+
+                                                                </tbody>
+
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+
+
+
+
+
+
+
+
+                                                </tbody>
+
+                                            }
+                                        </table>
+
+
+
+
+
+
+                                        @*.......................................................... Alll selection..........................................................................................*@
+                                        @*.......................................................... Alll selection..........................................................................................*@
+                                    }
+
+
+                                }
+
+                            </div>
+                        }
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+            </div>
+
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+
+
+
+
+}
+
+
+@code {
+    bool loading = true;
+    bool isgettingdata = false;
+    bool earningDetails = true;
+    bool deductionDetails = true;
+    double company_earning_total = 0;
+    double company_Deduction_total = 0;
+
+    double? company_Grand_total = 0;
+    List<Employee> employees;
+    List<Employee> employeeListSearched = new List<Employee>();
+
+    DateOnly since = DateOnly.FromDateTime(DateTime.Today.AddMonths(-1));
+    DateOnly to = DateOnly.FromDateTime(DateTime.Today);
+
+    List<Depatch> depatches;
+    List<ViewDispacfield> distchpatchFields;
+
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+
+    [CascadingParameter] Blazored.Modal.Services.IModalService Modal { get; set; } = default!;
+
+    Employee SelectedEmployee;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+
+        rollId = await localStorage.GetItemAsync<string>("Roll");
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            employees = await dbcontext.Employees.OrderBy(x => x.FirstName).ThenBy(x => x.LastName).ToListAsync();
+
+            depatches = await dbcontext.Depatches.ToListAsync();
+
+            employeeListSearched = employees;
+
+
+        }
+
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+    void searchEmployee(string? text)
+    {
+        //  Console.WriteLine(text);
+
+
+        if (text != null)
+        {
+
+
+            employeeListSearched = employees.Where(x =>
+
+            (x.FirstName != null &&
+            x.LastName != null &&
+            x.EmployeeCode != null &&
+            x.IcPp != null) &&
+
+
+            (x.FirstName.ToLower().Contains(text.ToLower()) ||
+            x.LastName.ToLower().Contains(text.ToLower()) ||
+
+            x.IcPp.ToLower().Contains(text.ToLower()) ||
+
+            x.EmployeeCode.ToLower().Contains(text.ToLower()))
+
+            ).ToList();
+
+            StateHasChanged();
+
+        }
+
+
+    }
+
+    async Task makeCsv()
+    {
+        var basePath = Path.Combine("wwwroot", "Docs");
+
+        var path = Path.Combine(_enviournment.ContentRootPath, basePath, "Export.csv");
+
+        using (StreamWriter file = new StreamWriter(path, false))
+        {
+            if (SelectedEmployee != null)
+            {
+                file.WriteLine($"Name,IC/PP,Code,Month,Earnings,Amount,Total Earning,Deductions,Amount,Total Deductions,Grand Total,Paid,Company Cost");
+                var e = SelectedEmployee;
+
+                file.WriteLine($"{e.FirstName} {e.LastName},{e.IcPp},{e.EmployeeCode},,,,,,,,");
+                for (DateOnly idate = since; idate <= to; idate = idate.AddMonths(1))
+                {
+                    double totalEarning = distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning == true && x.EmplyeeId == e.Id).Select(x => x.Amount).Sum().Value;
+                    double totalDeduction = distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true && x.EmplyeeId == e.Id).Select(x => x.Amount).Sum().Value;
+
+
+
+                    file.WriteLine($",,,{idate.ToString("MMMM, yyyy")},,,{distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning == true && x.EmplyeeId == e.Id).Select(x => x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)},,{distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true && x.EmplyeeId == e.Id).Select(x => x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)},,{depatches.FirstOrDefault(x => x.EmplyeeId == e.Id && x.Month == idate)?.TotalAmount?.ToString("F", CultureInfo.InvariantCulture)},{depatches.FirstOrDefault(x => x.EmplyeeId == e.Id && x.Month == idate)?.ActualAmount?.ToString("F", CultureInfo.InvariantCulture)},{depatches.FirstOrDefault(x => x.EmplyeeId == e.Id && x.Month == idate)?.CompanyCost?.ToString("F", CultureInfo.InvariantCulture)}");
+
+
+                    var earnings = distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true && x.EmplyeeId == e.Id).ToList();
+
+                    var deductions = distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true && x.EmplyeeId == e.Id).ToList();
+
+                    int leangth = 0;
+
+                    if (earnings.Count() > deductions.Count())
+                    {
+                        leangth = earnings.Count();
+                    }
+                    else
+                    {
+                        leangth = deductions.Count();
+                    }
+
+                    for (int i = 0; i <= leangth; i++)
+                    {
+                        if (i <= earnings.Count() && i <= deductions.Count())
+                        {
+                            file.WriteLine($",,,,{earnings[i].Name},{earnings[i].Amount},{deductions[i].Name},{deductions[i].Amount},Grand Total,Paid,Company Cost");
+                        }
+                        if (i <= earnings.Count() && i > deductions.Count())
+                        {
+                            file.WriteLine($",,,,{earnings[i].Name},{earnings[i].Amount},,,Grand Total,Paid,Company Cost");
+                        }
+                        if (i > earnings.Count() && i <= deductions.Count())
+                        {
+                            file.WriteLine($",,,,{earnings[i].Name},{earnings[i].Amount},,,Grand Total,Paid,Company Cost");
+                        }
+
+                    }
+
+                }
+
+            }
+            else
+            {
+                file.WriteLine($"Name,IC/PP,Code,Month,Earnings,Amount,Total Earning,Deductions,Amount,Total Deductions,Grand Total,Paid,Company Cost");
+
+                foreach (Employee e in employees)
+                {
+
+
+                    file.WriteLine($"{e.FirstName} {e.LastName},{e.IcPp},{e.EmployeeCode},,,,,,,,");
+
+
+
+
+                    for (DateOnly idate = since; idate <= to; idate = idate.AddMonths(1))
+                    {
+                        double totalEarning = distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning == true && x.EmplyeeId == e.Id).Select(x => x.Amount).Sum().Value;
+                        double totalDeduction = distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true && x.EmplyeeId == e.Id).Select(x => x.Amount).Sum().Value;
+
+
+
+                        file.WriteLine($",,,\"{idate.ToString("MMMM, yyyy")}\",,,{distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning == true && x.EmplyeeId == e.Id).Select(x => x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)},,{distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true && x.EmplyeeId == e.Id).Select(x => x.Amount).Sum()?.ToString("F", CultureInfo.InvariantCulture)},,{depatches.FirstOrDefault(x => x.EmplyeeId == e.Id && x.Month == idate)?.TotalAmount?.ToString("F", CultureInfo.InvariantCulture)},{depatches.FirstOrDefault(x => x.EmplyeeId == e.Id && x.Month == idate)?.ActualAmount?.ToString("F", CultureInfo.InvariantCulture)},{depatches.FirstOrDefault(x => x.EmplyeeId == e.Id && x.Month == idate)?.CompanyCost?.ToString("F", CultureInfo.InvariantCulture)}");
+
+
+                        var earnings = distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true && x.EmplyeeId == e.Id).ToList();
+
+                        var deductions = distchpatchFields.Where(x => x.Month.Value == idate && x.Isearning != true && x.EmplyeeId == e.Id).ToList();
+
+                        int leangth = 0;
+
+
+                        //while(earnings.Count()>0 || deductions.Count() > 0)
+                        //{
+                        //    if (earnings.Count()>0 && deductions.Count()>0)
+                        //    {
+                        //        file.WriteLine($",,,,{earnings[0].Name},{earnings[0].Amount},{deductions[0].Name},{deductions[0].Amount},,,");
+                        //        earnings.RemoveAt(0);
+                        //        deductions.RemoveAt(0);
+
+                        //    }
+                        //    if (earnings.Count() > 0 && deductions.Count()! > 0)
+                        //    {
+                        //        file.WriteLine($",,,,{earnings[0].Name},{earnings[0].Amount},,,,,");
+                        //    }
+                        //    if (earnings.Count! > 0 && deductions.Count() > 0)
+                        //    {
+                        //        file.WriteLine($",,,,,,{deductions[0].Name},{deductions[0].Amount},,,");
+                        //    }
+
+                        //}
+
+
+
+
+
+
+
+                        if (earnings.Count() >= deductions.Count())
+                        {
+                            leangth = earnings.Count();
+                        }
+                        else
+                        {
+                            leangth = deductions.Count();
+                        }
+
+                        for (int i = 0; i < leangth; i++)
+                        {
+                            if (i <= earnings.Count() && i <= deductions.Count())
+                            {
+                                file.WriteLine($",,,,{earnings[i].Name},{earnings[i].Amount},{deductions[i].Name},{deductions[i].Amount},,,");
+                                Console.WriteLine($"{i} - {earnings[i].Name},{earnings[i].Amount},{deductions[i].Name},{deductions[i].Amount}");
+
+                            }
+                            if (i < earnings.Count() && i > deductions.Count())
+                            {
+                                file.WriteLine($",,,,{earnings[i].Name},{earnings[i].Amount},,,,,");
+
+
+                                Console.WriteLine($"{i} - {earnings[i].Name},{earnings[i].Amount},{deductions[i].Name},{deductions[i].Amount}");
+                            }
+                            if (i > earnings.Count() && i < deductions.Count())
+                            {
+                                file.WriteLine($",,,,,,{deductions[i].Name},{deductions[i].Amount},,,");
+
+
+                                Console.WriteLine($"{i} - {earnings[i].Name},{earnings[i].Amount},{deductions[i].Name},{deductions[i].Amount}");
+                            }
+
+                        }
+
+                    }
+
+
+
+
+
+                }
+            }
+        }
+
+        ShowModal("File exported");
+
+        await NavigateToNewTab();
+
+
+    }
+
+    public async Task NavigateToNewTab()
+    {
+        string url = "Docs/Export.csv";
+        await jsRuntime.InvokeAsync<object>("open", url, "_blank");
+    }
+    void ShowModal(string message)
+    {
+        var parameters = new ModalParameters().Add(nameof(OkModal.Message), message);
+
+        var modal = Modal.Show<OkModal>("Confimation", parameters);
+
+    }
+
+
+    async Task generateReport()
+    {
+        if (SelectedEmployee != null)
+        {
+            isgettingdata = true;
+            await InvokeAsync(StateHasChanged);
+
+            using (sealConsultantContext dbcontext = new sealConsultantContext())
+            {
+                distchpatchFields = await dbcontext.ViewDispacfields.Where(x => x.EmplyeeId == SelectedEmployee.Id).OrderBy(x => x.Month).ToListAsync();
+            }
+            isgettingdata = false;
+            await InvokeAsync(StateHasChanged);
+        }
+        else
+        {
+
+            isgettingdata = true;
+            await InvokeAsync(StateHasChanged);
+
+            using (sealConsultantContext dbcontext = new sealConsultantContext())
+            {
+                distchpatchFields = await dbcontext.ViewDispacfields.OrderBy(x => x.Month).ToListAsync();
+            }
+            isgettingdata = false;
+            await InvokeAsync(StateHasChanged);
+
+
+            //var parameters = new ModalParameters().Add(nameof(OkModal.Message), "Select an employee");
+
+            //var modal = Modal.Show<OkModal>("Confimation", parameters);
+        }
+
+    }
+
+
+}

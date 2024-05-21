@@ -1,0 +1,125 @@
+﻿@page "/announcement"
+@using System.Globalization
+@using Microsoft.EntityFrameworkCore
+
+<AudioRecorder></AudioRecorder>
+
+
+<div class="container-fluid g-2 shadow">
+    <h3>Text Announcemnet</h3>
+    <div class="row">
+        <div class="col m-2 g-1 rounded-1">
+            <h5>Add Announcement</h5>
+
+            <EditForm Model="@announcement" OnValidSubmit="@HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="form-group m-1 ">
+                    <label for="title">Title:</label>
+                    <InputText id="title" class="form-control" @bind-Value="announcement.Title" />
+                </div>
+
+                <div class="form-group m-1">
+                    <label for="details">Details:</label>
+                    <InputTextArea id="details" class="form-control" @bind-Value="announcement.Details" />
+                </div>
+
+                <div class="form-group m-1">
+                    <label for="date">Date:</label>
+                    <InputDate id="date" class="form-control" @bind-Value="announcement.Date" />
+                </div>
+
+                <button type="submit" class="btn btn-primary m-2">Add Announcement</button>
+            </EditForm>
+        </div>
+
+    </div>
+    <div class="row">
+        <div class="col m-2 g-1 rounded-1">
+
+            <h5>Announcements</h5>
+            <div class="form-group p-4">
+                <label for="filterDate">Filter by Date:</label>
+                <input type="date" id="filterDate" class="form-control" @onchange="(ChangeEventArgs e)=>onfilterdatechange(e)" />
+            </div>
+
+            <table class="table table-responsive table-secondary">
+                <thead >
+                    <tr>
+                        <th>Date</th>
+                        <th>Title</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in filteredAnnouncements)
+                    {
+                        <tr>
+                            <td>@item.Date?.ToString("yyyy-MM-dd")</td>
+                            <td>@item.Title</td>
+                            <td>@item.Details</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private Announcement announcement = new Announcement();
+    private List<Announcement> announcements = new List<Announcement>();
+    private List<Announcement> filteredAnnouncements = new List<Announcement>();
+    private string filterDateString;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAnnouncements();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        announcement.Id = Guid.NewGuid(); // Generate a new ID for the announcement
+
+        using (var context = new sealConsultantContext(new DbContextOptions<sealConsultantContext>()))
+        {
+            context.Announcements.Add(announcement);
+            await context.SaveChangesAsync();
+        }
+
+        announcement = new Announcement(); // Reset the form after submission
+        await LoadAnnouncements(); // Reload the announcements to include the new one
+    }
+
+    async Task onfilterdatechange(ChangeEventArgs e)
+    {
+        filterDateString = e?.Value?.ToString();
+        await LoadAnnouncements();
+
+    }
+
+    private async Task LoadAnnouncements()
+    {
+        using (var context = new sealConsultantContext(new DbContextOptions<sealConsultantContext>()))
+        {
+            announcements = await context.Announcements.ToListAsync();
+
+            if (!string.IsNullOrWhiteSpace(filterDateString))
+            {
+                if (DateOnly.TryParse(filterDateString, out var filterDate))
+                {
+                    filteredAnnouncements = announcements
+                        .Where(a => a.Date.HasValue && a.Date.Value.Equals(filterDate))
+                        .OrderByDescending(a => a.Date)
+                        .ToList();
+                }
+            }
+            else
+            {
+                filteredAnnouncements = announcements.OrderByDescending(a => a.Date).ToList();
+            }
+        }
+    }
+}

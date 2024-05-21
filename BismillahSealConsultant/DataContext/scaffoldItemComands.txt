@@ -1,0 +1,3 @@
+﻿Scaffold-DbContext "Host=2a01:4f9:3051:4402::1501;port=7965;Database=sealConsultant;Username=postgres;Password=x67q262Cx21; Pooling=true; Timeout=300" Npgsql.EntityFrameworkCore.PostgreSQL -ContextDir DataContext -OutputDir DataModels -f
+
+Scaffold-DbContext "Host=65.109.89.252;port=14065;Database=sealConsultant;Username=postgres;Password=x67q262Cx21; Pooling=true; Timeout=300" Npgsql.EntityFrameworkCore.PostgreSQL -ContextDir DataContext -OutputDir DataModels -f

@@ -1,0 +1,84 @@
+﻿@page "/print"
+@inject IJSRuntime js
+
+@using BismillahSealConsultant.Componants
+
+
+@if (loading)
+{
+    <Chase Size="100px"></Chase>
+}
+else
+{
+    <div class="row">
+        <div class="col">
+            <button @onclick="print"> Print</button>
+        </div>
+    </div>
+
+    <div class="container" id="print">
+
+        @foreach (var pay in PayrollDitchpatch.dispatchList)
+        {
+            <div class="row">
+                <div class="col">
+
+                    <Payslip employeeId="@pay.Id.ToString()"></Payslip>
+
+                </div>
+
+            </div>
+
+            clean();
+
+        }
+
+
+    </div>
+}
+
+
+
+@code {
+    bool loading = false;
+    public static List<Payroll> payrollsRelated = new List<Payroll>();
+
+    public static List<Deduction> deductionsRelated = new List<Deduction>();
+
+    public static List<PaySlipField> paySlipExtraFields = new List<PaySlipField>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+            payrollsRelated = await dbcontext.Payrolls.ToListAsync();
+
+            deductionsRelated = await dbcontext.Deductions.ToListAsync();
+
+            paySlipExtraFields = await dbcontext.PaySlipFields.ToListAsync();
+
+
+
+        }
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task print()
+    {
+        await js.InvokeVoidAsync("PrintElem");
+    }
+
+    void clean()
+    {
+        payrollsRelated = new List<Payroll>();
+
+        deductionsRelated = new List<Deduction>();
+
+        paySlipExtraFields = new List<PaySlipField>();
+    }
+}

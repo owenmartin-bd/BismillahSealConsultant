@@ -1,0 +1,25 @@
+﻿@inject NavigationManager nav
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+
+            <h5>@Message</h5>
+            <br />
+
+            <div class="input-group">
+               <button class="btn btn-primary" @onclick="()=> nav.NavigateTo(Navlink)">View Report</button>
+            @*  <button class="btn btn-danger" @onclick="async()=> await BlazoredModal.CloseAsync()">Close</button>*@
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+@code {
+    [CascadingParameter] BlazoredModalInstance BlazoredModal { get; set; } = default!;
+
+    [Parameter] public string? Message { get; set; }
+
+    [Parameter] public string? Navlink { get; set; } 
+}

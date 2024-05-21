@@ -1,0 +1,91 @@
+﻿@page "/applog"
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-2">
+            <label>Select a date to view log data</label>
+            <input type="date" class="form-control" @onchange="(ChangeEventArgs e) => ondateSelect(e)" />
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col-12">
+            @if (employeeLogViews != null && employeeLogViews.Count > 0)
+            {
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            
+                            <th>Item</th>
+                            <th>Date/Time</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Employee Code</th>
+                            <th>Roll ID</th>
+                            <th>Level</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in employeeLogViews)
+                        {
+                            <tr>
+                              
+                                <td>@log.Item</td>
+                                <td>@log.DateTime?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                <td>@log.FirstName</td>
+                                <td>@log.LastName</td>
+                                <td>@log.EmployeeCode</td>
+                                <td>@log.RollId</td>
+                                <td>@log.Level</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+               @*  <p>No data available for the selected date.</p> *@
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    List<EmployeeLogView> employeeLogViews = new List<EmployeeLogView>();
+
+    protected override async Task OnInitializedAsync()
+    {
+       
+
+        // Convert DateOnly to DateTime for comparison
+        DateTime selectedDateTime = DateTime.Today;
+
+        // Fetch data from the database context
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            // Ensure toListAsync() is called to execute the query
+            employeeLogViews = await dbcontext.EmployeeLogViews
+                .Where(x => x.DateTime.HasValue && x.DateTime.Value.Date == selectedDateTime.Date)
+                .ToListAsync();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ondateSelect(ChangeEventArgs e)
+    {
+        // Parse the selected date from the event args
+        DateOnly selectedDate = DateOnly.Parse(e?.Value?.ToString());
+
+        // Convert DateOnly to DateTime for comparison
+        DateTime selectedDateTime = selectedDate.ToDateTime(new TimeOnly(0, 0));
+
+        // Fetch data from the database context
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            // Ensure toListAsync() is called to execute the query
+            employeeLogViews = await dbcontext.EmployeeLogViews
+                .Where(x => x.DateTime.HasValue && x.DateTime.Value.Date == selectedDateTime.Date)
+                .ToListAsync();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+}

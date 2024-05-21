@@ -1,0 +1,262 @@
+﻿@* @page "/chart" *@
+@using System.Globalization;
+
+@if (rollsLoading)
+{
+    <Chase></Chase>
+}
+else
+{
+    @if (logger.checkAccess("/chart", rollId))
+    {
+        <div class="container-fluid">
+            <div class="row p-1">
+                <h4>New Chart For EMploye Hour Counting</h4>
+
+                <div class="col-2">
+
+                    <div class="input-group">
+                        <span class="input-group-text" id="basic-addon1">Date started</span>
+                        <input class="form-control" type="date" @bind="chatSchema.DateStarted" />
+
+
+                    </div>
+
+                </div>
+                <div class="col-2">
+
+                    <div class="input-group">
+                        <span class="input-group-text" id="basic-addon1">Work start time</span>
+                        <input class="form-control" type="time" @onchange="(ChangeEventArgs e)=>{morningStart = DateTime.Parse( e?.Value?.ToString()); chart.Intime = morningStart; StateHasChanged(); }" />
+
+                    </div>
+
+                </div>
+
+                <div class="col-2">
+
+                    <div class="input-group">
+                        <span class="input-group-text" id="basic-addon1">Interval</span>
+                        <input class="form-control" type="number" @bind="interval" />
+
+                    </div>
+
+                </div>
+
+
+            </div>
+            <div class="row p-1">
+                <div class="col">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>
+                                    Entry
+                                </th>
+                                <th>
+                                    Exit
+                                </th>
+                                <th>
+                                    Total Hour
+                                </th>
+                                <th>
+
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            @foreach (var c in charts)
+                            {
+                                <tr>
+
+
+                                    <td>
+                                        <div class="form-control">@c.Intime?.ToString("h:mm:ss tt")</div>
+                                    </td>
+
+                                    <td>
+                                        <div class="form-control">@c.Outtime?.ToString("h:mm:ss tt")</div>
+                                    </td>
+                                    <td>
+                                        <div class="form-control">@c.Hour?.ToString()</div>
+                                    </td>
+                                    <td>
+                                        <input class="btn btn-close btn-danger" @onclick="()=>charts.Remove(c)" />
+                                    </td>
+
+                                </tr>
+                            }
+
+                            <tr>
+
+
+                                <td>
+                                    <div class="form-control" style="min-height:40px">@chart.Intime?.ToString("h:mm:ss tt")</div>
+                                </td>
+
+
+                                <td>
+                                    <input class="form-control" type="time" @onchange="@((ChangeEventArgs e)=>  { try{chart.Outtime =  DateTime.Parse( e?.Value?.ToString());}catch{ var parameters = new ModalParameters().Add(nameof(OkModal.Message), "Use currect timing");var modal = Modal.Show<OkModal>("Confimation", parameters);  } t = chart.Outtime.Value; StateHasChanged();})">
+                                </td>
+
+
+                                <td>
+                                    <input class="form-control" type="text" @bind=chart.Hour></input>
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary" @onclick="add"> Add </button>
+                                </td>
+
+                            </tr>
+
+
+      
+
+                        </tbody>
+
+                    </table>
+
+
+
+                </div>
+
+
+            </div>
+            <div class="row">
+                <div class="col">
+
+                    @if (issaving)
+                    {
+                        <Chase></Chase>
+                    }
+                    else
+                    {
+                        <button class="btn btn-success" @onclick="save">Save</button>
+                    }
+
+
+
+                </div>
+            </div>
+
+
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+
+    
+}
+
+
+
+
+
+@code {
+    ChatSchema chatSchema = new ChatSchema() { Id = Guid.NewGuid() };
+
+    [CascadingParameter] Blazored.Modal.Services.IModalService Modal { get; set; } = default!;
+
+    List<DataModels.Chart> charts = new List<DataModels.Chart>();
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+
+    DateTime datestarted;
+
+    DateTime dateENded;
+
+    bool rollsLoading = true;
+
+    DateTime morningStart = new DateTime();
+
+    DateTime nightStart;
+
+    DateTime t = DateTime.Today.AddHours(8);
+
+    bool issaving = false;
+
+    int interval = 15;
+    DataModels.Chart chart = new DataModels.Chart();
+
+    protected override async Task OnInitializedAsync()
+    {
+        rollsLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        //............add this
+        rollId = await localStorage.GetItemAsync<string>("Roll");
+        //............addthis
+        rollsLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+
+    }
+
+
+
+    void add()
+    {
+        chart.Id = Guid.NewGuid();
+
+
+
+        chart.ChartSchemaId = chatSchema.Id;
+        charts.Add(chart);
+
+        t = chart.Outtime.Value.AddMinutes(interval);
+
+        chart = new DataModels.Chart()
+            {
+                Intime = morningStart,
+                // Outtime = t,
+
+            };
+
+
+
+
+
+        StateHasChanged();
+
+
+    }
+
+    async Task save()
+    {
+        issaving = true;
+
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            var previouschartSchema = dbcontext.ChatSchemas.FirstOrDefault(x => x.DateEnded == null);
+
+            if (previouschartSchema != null)
+            {
+                previouschartSchema.DateEnded = chatSchema.DateStarted.Value.AddDays(-1);
+            }
+
+
+
+            dbcontext.ChatSchemas.Add(chatSchema);
+            dbcontext.Charts.AddRange(charts);
+
+            await dbcontext.SaveChangesAsync();
+        }
+
+        issaving = false;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

@@ -1,0 +1,275 @@
+﻿@page "/payday"
+@inject NavigationManager nav
+
+
+@if (is_loading)
+{
+    <h5>loading...</h5>
+}
+else
+{
+    <div class="container-fluid">
+
+        <div class="row">
+            <div class="col-12">
+                <div class="input-group">
+                    @if (groups != null)
+                    {
+                        <select class="form-select form-select-sm" aria-label=".form-select-sm example" @onchange="(ChangeEventArgs e)=>{ onGroupSelected(Guid.Parse(e?.Value?.ToString())); }">
+
+
+                            <option selected disabled>CLick to select the Group</option>
+
+                            @foreach (var g in groups)
+                            {
+                                <option value="@g.Id"> @g.GroupName </option>
+                            }
+                        </select>
+                        @if (_isFacingEMployees)
+                        {
+                            <button class="btn btn-sm btn-outline-primary">
+
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden"></span>
+                                </div>
+
+                            </button>
+                        }
+                        <span class="input-group-text" id="basic-addon1">Start Date</span>
+                        <input class="form-control" @bind="startDate" type="date" />
+                        <span class="input-group-text" id="basic-addon1">End Date</span>
+                        <input class="form-control" @bind="endDate" type="date" />
+                        <span class="input-group-text" id="basic-addon1">Paid on</span>
+                        <input class="form-control" @bind="paidOn" type="date" />
+                        @if (_isUpdating)
+                        {
+                            <button class="btn">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden"></span>
+                                </div>
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary" @onclick="getPayments">Pay</button>
+                        }
+
+                    }
+                </div>
+
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col">
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>
+                                Empoyee
+                            </th>
+                            <th>
+                                Details
+                            </th>
+
+                            <th>
+                                Total
+                            </th>
+                            <th>
+                                Action
+                            </th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        @foreach (var e in employeesInGroup)
+                        {
+
+                            <tr>
+
+                                <td>@employees.FirstOrDefault(x => x.Id == e.EmployeId)?.FirstName @employees.FirstOrDefault(x => x.Id == e.EmployeId)?.LastName ( @employees.FirstOrDefault(x => x.Id == e.EmployeId)?.EmployeeCode )</td>
+
+                                <td>
+                                    <table class="table table-bordered">
+                                        <thead>
+                                        <th>
+                                            Date
+                                        </th>
+
+                                        <th>
+                                            Hours
+                                        </th>
+                                        <th>
+                                            Amount
+                                        </th>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var wp in workerPaymentDetailsBydates.Where(x => x.EmployeeId == e.EmployeId).OrderBy(x=>x.Date))
+                                            {
+
+                                                <tr>
+
+
+                                                    <td>
+                                                        @wp.Date
+                                                    </td>
+                                                    <td>
+                                                        @wp.TotalHours
+                                                    </td>
+                                                    <td>
+                                                        @wp.TotalEarnedOnDate
+                                                    </td>
+
+                                                </tr>
+
+                                            }
+                                        </tbody>
+                                    </table>
+
+                                </td>
+
+
+                                <th>
+                                    @workerPaymentDetailsBydates.Where(x => x.EmployeeId == e.EmployeId).Sum(x => x.TotalEarnedOnDate)
+                                </th>
+                                <th>
+                                    <button class="btn btn-outline-primary btn-sm" @onclick="@(()=>nav.NavigateTo($"/Paydeatiels/{e.EmployeId}"))" >Show All</button> 
+                                </th>
+
+                            </tr>
+                        }
+
+
+
+
+
+                    </tbody>
+
+
+                </table>
+
+
+
+            </div>
+        </div>
+
+
+    </div>
+}
+
+
+
+
+@code {
+    bool is_loading = true;
+    bool _isFacingEMployees = true;
+    bool _isUpdating = false;
+
+    DateOnly startDate = DateOnly.FromDateTime(DateTime.Today);
+    DateOnly endDate = DateOnly.FromDateTime(DateTime.Today);
+    DateOnly paidOn = DateOnly.FromDateTime(DateTime.Today);
+
+    List<Employee> employees = new List<Employee>();
+
+    List<GroupEmployee> employeesInGroup = new List<GroupEmployee>();
+
+    List<WorkerPaymentDetailsBydate> workerPaymentDetailsBydates = new List<WorkerPaymentDetailsBydate>();
+
+
+    List<Employee>? EmployeeIntheGroup;
+    List<Group>? groups;
+    Group? selectedGroup;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+            employees = await dbcontext.Employees.ToListAsync();
+
+            groups = await dbcontext.Groups.ToListAsync();
+
+
+
+
+
+        }
+        _isFacingEMployees = false;
+        is_loading = false;
+
+    }
+    async Task onGroupSelected(Guid id)
+    {
+        _isFacingEMployees = true;
+        await InvokeAsync(StateHasChanged);
+
+        selectedGroup = groups?.FirstOrDefault(x => x.Id == id);
+
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            employeesInGroup = await dbcontext.GroupEmployees.Where(x => x.GroupId == id).ToListAsync();
+
+            // Fetch the IDs of employees in the specified group
+            // var employeeIdsInGroup = await dbcontext.GroupEmployees
+            //                                          .Where(x => x.GroupId == id)
+            //                                          .Select(x => x.EmployeId)
+            //                                          .ToListAsync();
+
+            var employeeIdsInGroup = employeesInGroup.Select(x => x.EmployeId).ToList();
+
+            // Fetch unpaid WorkerPaymentDetailsBydate for those employee IDs
+            var unpaidWorkerPaymentDetails = await dbcontext.WorkerPaymentDetailsBydates
+                                                            .Where(x => employeeIdsInGroup.Contains(x.EmployeeId) && x.Paid != true)
+                                                            .ToListAsync();
+
+            workerPaymentDetailsBydates = unpaidWorkerPaymentDetails;
+
+        }
+
+
+
+        _isFacingEMployees = false;
+        await InvokeAsync(StateHasChanged);
+
+
+
+    }
+
+    async Task getPayments()
+    {
+        _isUpdating = true;
+        await InvokeAsync(StateHasChanged);
+        foreach (WorkerPaymentDetailsBydate w in workerPaymentDetailsBydates)
+        {
+            if (w.Date >= startDate && w.Date <= endDate)
+            {
+                w.Paid = true;
+                w.Paidate = paidOn;
+
+            }
+
+
+
+        }
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            dbcontext.WorkerPaymentDetailsBydates.UpdateRange(workerPaymentDetailsBydates);
+
+            await dbcontext.SaveChangesAsync();
+        }
+
+        await onGroupSelected(selectedGroup.Id);
+
+        _isUpdating = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+}

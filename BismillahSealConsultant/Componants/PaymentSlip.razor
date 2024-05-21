@@ -1,0 +1,236 @@
+﻿@using BismillahSealConsultant.DataModels
+@using BismillahSealConsultant.DataContext
+@using Microsoft.EntityFrameworkCore
+
+<div class="container">
+    <div class="row">
+        <section style="background-color: #eee;margin-top: 5vh;">
+            <div class="container payroll-nav">
+                <div class="row">
+                    <div class="col">
+                        <nav aria-label="breadcrumb" class="bg-light rounded-3 p-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <ol class="breadcrumb mb-0">
+                                        <p>Company Name : Seal Consult</p>
+                                    </ol>
+                                    <ol class="breadcrumb mb-0">
+                                        <p>Name:  e.FirstName&nbsp;e.LastName</p>
+                                    </ol>
+                                </div>
+                                <div>
+                                    <ol class="breadcrumb mb-0">
+                                        <p>Date: DateOnly.FromDateTime(DateTime.Now)</p>
+                                    </ol>
+                                    <ol class="breadcrumb mb-0">
+                                        <p>EMPL # : e.EmployeeCode</p>
+                                    </ol>
+                                </div>
+                            </div>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="col-lg-12">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row">
+
+
+
+                            <div class="col-sm-4 payroll-form">
+                                <div class="payroll-form-1">
+
+                                    foreach (var p in payrollsRelated)
+                                    {
+
+                                        <p class="mb-0 ">p.Name</p>
+
+
+                                    }
+
+
+
+
+
+                                </div>
+                                <p> &nbsp </p>
+                                <p class="text-end">TOTAL</p>
+
+                            </div>
+                            <div class="col-sm-2 payroll-form">
+
+
+                                <div class="payroll-form-1">
+                                    <p>RM</p>
+
+                                    foreach (var payroll in payrollsRelated)
+                                    {
+                                        if (payroll.Amount != null)
+                                        {
+                                            <p class="text-muted mb-0 ">payroll.Amount</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted mb-0 ">
+                                                calculateaPAmount(payrollsRelated.FirstOrDefault(x=>x.Id == payroll.ReletedPayrollId).Amount,payroll.Percentage)
+                                            </p>
+                                        }
+
+
+                                    }
+
+
+
+
+
+
+                                </div>
+
+
+
+
+                                <p class="text-start">payable</p>
+
+
+
+                            </div>
+
+
+
+                            <div class="col-sm-4 payroll-form">
+                                <div class="payroll-form-1">
+
+                                    foreach (var d in deductionsRelated)
+                                    {
+
+                                        <p class="mb-0 ">d.Name</p>
+
+
+                                    }
+                                </div>
+                                <p class="text-end">TOTAL</p>
+                            </div>
+
+
+                            <div class="col-sm-2 ">
+                                <div class="payroll-form-1">
+                                    foreach (var deduction in deductionsRelated)
+                                    {
+                                        if (deduction.Amount != null)
+                                        {
+                                            <p class="text-muted mb-0 ">deduction.Amount</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted mb-0 ">
+                                                calculateaPAmount(payrollsRelated.FirstOrDefault(x=>x.Id == deduction.ReferencePaymentId).Amount,deduction.Percentage)
+                                            </p>
+                                        }
+
+
+                                    }
+                                </div>
+                                <p>deduc</p>
+                            </div>
+                        </div>
+
+
+
+
+
+
+
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <p class="mb-0 text-end">Total</p>
+                            </div>
+                            <div class="col-sm-2" style="border: 1px solid grey">
+                                <p class="text-muted mb-0 ">CalculateTotalSalary()</p>
+                            </div>
+                        </div>
+
+
+
+
+
+
+
+
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <p class="mb-0 text-center">Current Month</p>
+                            </div>
+                            <div class="col-sm-6">
+                            </div>
+                            <hr>
+                            <div class="col-sm-6 payroll-form">
+
+                           
+
+
+                            </div>
+                            <div class="col-sm-6 ">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <p>IC/PP :</p>
+                                        <p>INCOME TAX NO :</p>
+                                        <p>EPF NO : </p>
+                                        <p>SOCSO NO :</p>
+                                        <p>BANK A/C NO :</p>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <p>e.IcPp</p>
+                                        <p>e.TaxNumber</p>
+                                        <p>e.Epf</p>
+                                        <p>e.Socso</p>
+                                        <p>e.BankAcNo</p>
+                                    </div>
+
+
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <p>&nbsp</p>
+                                <p class="mb-0">This is a machine generated slip</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <p>&nbsp</p>
+                                <p class="mb-0">RECEIVED BY : ______________________________</p>
+                            </div>
+                        </div>
+
+
+
+                    </div>
+                </div>
+
+            </div>
+
+
+
+        </section>
+
+
+
+
+
+
+
+
+
+    </div>
+</div>
+
+
+@code {
+
+
+}

@@ -1,0 +1,1258 @@
+﻿@page "/employee/{employeeId}"
+@using BlazorInputFile
+@using BismillahSealConsultant.Service;
+
+@inject IFileUpload fileUpload
+@inject NavigationManager nav
+
+@if (loading)
+{
+    <div class="container">
+        <div class="row">
+            <Chase Size="100px" style="margin-left:45%; margin-top: 45vh;"></Chase>
+        </div>
+    </div>
+}
+else
+{
+    @if (logger.checkAccess("/employee/{employeeId}", rollId))
+    {
+        <div class="container">
+            <div class="row">
+                <section style="background-color: #fff;padding-top: 5vh;" class="shadow">
+                    <div class="container py-3">
+                        <div class="row">
+                            <div class="col">
+                                <nav aria-label="breadcrumb" class="bg-light rounded-3 p-2 mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <ol class="breadcrumb mb-0">
+
+                                            <li class="breadcrumb-item active" aria-current="page"><h4>Employee Details</h4></li>
+
+                                        </ol>
+
+                                        <ol class="breadcrumb mb-0">
+                                            <li>
+                                                @if (editinfo == true)
+                                                {
+
+                                                    <button class="btn btn-primary" @onclick="()=>editinfo = false"> Edit </button>
+                                                }
+                                                else
+                                                {
+
+                                                    @if (updating)
+                                                    {
+                                                        <Fold></Fold>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-primary" @onclick="UpdateEmployee"> Update </button>
+                                                    }
+
+                                                }
+
+
+                                            </li>
+                                        </ol>
+                                    </div>
+
+                                </nav>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-lg-4">
+                                <div class="card mb-4">
+                                    <div class="card-body text-center">
+                                        <img src="Photos/@e.Photo" alt="avatar"
+                                     class="rounded-circle img-fluid" style="width: 150px;">
+                                        <h5 class="my-3"> @e.FirstName&nbsp;@e.LastName</h5>
+
+                                        <p class="text-muted mb-4">@ve.Name</p>
+                                        <p class="text-muted mb-4">@e.Email</p>
+
+
+                                    </div>
+                                </div>
+                                @*.....................................................................................................................................................................................*@
+                                <div class="card mb-4 mb-lg-0">
+                                    <div class="card-body p-0">
+                                        <ul class="list-group list-group-flush rounded-3">
+
+
+                                            @foreach (Doc d in docList)
+                                            {
+
+
+                                                <li class="list-group-item  justify-content-center align-items-center p-4">
+                                                    <div class="d-flex justify-content-center ">
+
+
+                                                        <div><p class="mt-1 px-2">@d.DocmentName</p></div>
+                                                        <a href="@d.Link" class="btn btn-link btn-sm" target="_blank">Download</a>
+
+                                                    </div>
+                                                </li>
+
+                                            }
+
+
+
+                                        </ul>
+                                    </div>
+                                </div> <br />
+
+                                @*.....................................................................................................................................................................................*@
+
+
+                                <div class="accordion" id="accordionExample">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingOne">
+                                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                                Please Upload Doc Here
+                                            </button>
+                                        </h2>
+                                        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                                            <div class="accordion-body">
+                                                <div class="row">
+                                                    <div class="col-12">
+
+
+                                                        <BlazorInputFile.InputFile OnChange="HandleFileSelected"></BlazorInputFile.InputFile>
+                                                        <br />
+                                                        @if (alart != string.Empty)
+                                                        {
+                                                            <div class="alert alert-secondary" style="margin-top:5px" role="alert">
+                                                                @alart
+                                                            </div>
+                                                        }
+
+                                                    </div>
+
+
+                                                </div>
+
+
+                                                <div class="row" style="margin-top:10px">
+                                                    <div class="col-12">
+
+
+                                                        <div class="mb-3 rounded" style="border:1px">
+                                                            <label class="form-label">Doc Name</label>
+                                                            <input type="text" @bind="d.DocmentName" class="form-control">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Doc Type</label>
+                                                            <input type="text" @bind="d.DocumentType" class="form-control">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Remark</label>
+                                                            <input type="text" @bind="d.Remark" class="form-control">
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col d-grid gap-2">
+                                                        @if (uploadingDoc)
+                                                        {
+                                                            <Chase Size="50px"></Chase>
+                                                        }
+                                                        else
+                                                        {
+                                                            <button class="btn btn-info" @onclick="save">Up-load</button>
+                                                        }
+
+                                                    </div>
+
+                                                </div>
+
+
+
+
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+
+                                    @*.....................................................................................................................................................................................*@
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingTwo">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+
+                                                Add Degree
+
+                                            </button>
+                                        </h2>
+                                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                                            <div class="accordion-body">
+                                                <div class="accordion-body">
+
+
+                                                    <div class="row" style="margin-top:10px">
+                                                        <div class="col-12">
+
+
+                                                            <div class="mb-3 rounded" style="border:1px">
+                                                                <label class="form-label">Degree Name</label>
+                                                                <input type="text" @bind="de.DegreeName" class="form-control">
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Grade/Result</label>
+                                                                <input type="text" @bind="de.GradeResult" class="form-control">
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Passing Year</label>
+                                                                <input type="text" @bind="de.PassingYear" class="form-control">
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Remark</label>
+                                                                <input type="text" @bind="de.Remark" class="form-control">
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col d-grid gap-2">
+                                                            @if (uploadingCertificate)
+                                                            {
+                                                                <Chase Size="50px"></Chase>
+                                                            }
+                                                            else
+                                                            {
+                                                                <button class="btn btn-info" @onclick="saveDegree">Save-degree</button>
+                                                            }
+
+                                                        </div>
+
+                                                    </div>
+
+
+
+
+                                                </div>
+
+
+
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                                </div>
+
+
+                                @*.....................................................................................................................................................................................*@
+                            </div>
+
+                            <div class="col-lg-8">
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        @*Profile without edit Starts..............................................................................................................................................................*@
+                                        @if (editinfo)
+                                        {
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">First Name</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.FirstName</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Last Name</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.LastName</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Date of Birth</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.Dob</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Current Address</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.CurrentAddress</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Permanent Address</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.PemanantAddress</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">nationality</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.Nationality</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Emergency Contact Name</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.EmerhencyContactName</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Emergency Contact Number</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.EmergencyContact</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Relation With Contact</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.EmergengyContactRelation</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">I-Card/Passport</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.IcPp </p>
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Joining Date</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.JoiningDate</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Last Working Date</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.LastWorkingDay</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Tax Number</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.TaxNumber</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Employee Code</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.EmployeeCode</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">CIDB </p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.Cidb</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">SOCSO</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.Socso</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">EPF</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.Epf</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Bank Ac No</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.BankAcNo</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Possition</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    @if (e.RollId != null)
+                                                    {
+
+                                                        <p class="text-muted mb-0"> @rolls.FirstOrDefault(x=>x.Id == e.RollId)?.Name</p>
+                                                    }
+
+
+
+
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Level</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.Level</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">OT Elegible</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.OtElecgibility</p>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Active Employee</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">
+
+                                                        <input class="form-check-input" @bind="e.Active" type="checkbox" disabled>
+
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Seals Employee</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">
+
+                                                        <input class="form-check-input" @bind="e.Active" type="checkbox" disabled>
+
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <hr>
+
+
+                                            @if (e.PassExp > DateOnly.FromDateTime(DateTime.Now) && e.PassExp < DateOnly.FromDateTime(DateTime.Now.AddMonths(+6)))
+                                            {
+                                                <div class="row bg-danger text-white">
+                                                    <div class="col-sm-3">
+                                                        <p class="mb-0">Passport Expiry Date</p>
+                                                    </div>
+                                                    <div class="col-sm-9">
+                                                        <p class="mb-0">@e.PassExp</p>
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-3">
+                                                        <p class="mb-0">Passport Expiry Date</p>
+                                                    </div>
+                                                    <div class="col-sm-9">
+                                                        <p class="text-muted  mb-0">@e.PassExp</p>
+                                                    </div>
+                                                </div>
+                                            }
+
+
+
+                                            <hr>
+
+                                            @if (e.VisaExp > DateOnly.FromDateTime(DateTime.Now) && e.VisaExp < DateOnly.FromDateTime(DateTime.Now.AddMonths(+3)))
+                                            {
+                                                <div class="row bg-danger text-white">
+                                                    <div class="col-sm-3">
+                                                        <p class="mb-0">Visa Expiry Date </p>
+                                                    </div>
+                                                    <div class="col-sm-9">
+                                                        <p class="mb-0">@e.VisaExp</p>
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-3">
+                                                        <p class="mb-0">Visa Expiry Date </p>
+                                                    </div>
+                                                    <div class="col-sm-9">
+                                                        <p class="text-muted mb-0">@e.VisaExp</p>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            <hr>
+                                            @if (e.CidbExpDate > DateOnly.FromDateTime(DateTime.Now) && e.CidbExpDate < DateOnly.FromDateTime(DateTime.Now.AddMonths(+3)))
+                                            {
+                                                <div class="row bg-danger text-white">
+                                                    <div class="col-sm-3">
+                                                        <p class="mb-0">Visa Expiry Date </p>
+                                                    </div>
+                                                    <div class="col-sm-9">
+                                                        <p class="mb-0">@e.CidbExpDate</p>
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-3">
+                                                        <p class="mb-0">CIDB Expiry Date </p>
+                                                    </div>
+                                                    <div class="col-sm-9">
+                                                        <p class="text-muted mb-0">@e.CidbExpDate</p>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            <hr>
+
+
+
+
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Remark</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">@e.Remark</p>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="row bg-opacity-75 bg-gradient">
+                                                <div class="col-12">
+                                                    <div class="mb-3">
+                                                        <h4> Please upload employee picture here (only .jpg/.png files supported)</h4>
+                                                        <label class="form-label">Employee Picture (.jpg/.png)</label>
+                                                        <BlazorInputFile.InputFile OnChange="HandlePicSelected"></BlazorInputFile.InputFile>
+                                                        <br />
+                                                        @if (alartPic != string.Empty)
+                                                        {
+                                                            <div class="alert alert-secondary" style="margin-top:5px" role="alert">
+                                                                @alartPic
+                                                            </div>
+                                                        }
+
+                                                    </div>
+
+
+
+                                                </div>
+
+
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">First Name</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.FirstName">
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Last Name</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.LastName">
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Date of Birth</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="date" class="form-control" @bind="e.Dob">
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Password</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="password" class="form-control" @bind="e.Password">
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Current Address</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.CurrentAddress">
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Permanent Address</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.PemanantAddress">
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">nationality</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.Nationality">
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Emergency Contact Name</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.EmerhencyContactName">
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Emergency Contact Number</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="tel" class="form-control" @bind="e.EmergencyContact">
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Relation With Contact</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.EmergengyContactRelation">
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">I-Card/Passport</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.IcPp">
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Joining Date</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="date" class="form-control" @bind="e.JoiningDate">
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Last Working Date</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="date" class="form-control" @bind="e.LastWorkingDay">
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Tax Number</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.TaxNumber">
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Employee Code</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.EmployeeCode">
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">CIDB </p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.Cidb">
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">SOCSO</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.Socso">
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">EPF</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.Epf">
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Bank Ac No</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.BankAcNo">
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Possition</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <select @bind="e.RollId" class="form-control">
+                                                        <option value="" selected disabled>Please Select a Possition</option>
+
+                                                        @foreach (Roll r in rolls)
+                                                        {
+                                                            <option value="@r.Id">@r.Name</option>
+                                                        }
+
+
+
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Passport Expiry Date</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="date" class="form-control" @bind="e.PassExp">
+                                                </div>
+                                            </div>
+                                            <hr>
+
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Visa Expiry Date</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="date" class="form-control" @bind="e.VisaExp">
+                                                </div>
+                                            </div>
+                                            <hr />
+
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Cidb Expiry Date</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="date" class="form-control" @bind="e.CidbExpDate">
+                                                </div>
+                                            </div>
+                                            <hr />
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Remark</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <input type="text" class="form-control" @bind="e.Remark">
+                                                </div>
+                                            </div>
+
+                                            <hr />
+
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Level</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <select type="text" @bind="e.Level" class="form-control">
+                                                        <option selected disabled>Please Select</option>
+                                                        <option value="Staff">Staff</option>
+                                                        <option value="Worker">Worker</option>
+                                                        <option value="Foreman">Foreman</option>
+                                                    </select>
+
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">OT Elegible</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <select type="text" @bind="e.OtElecgibility" class="form-control">
+                                                        <option selected disabled>Please Select</option>
+                                                        <option value="Yes">Yes</option>
+                                                        <option value="No">No</option>
+
+                                                    </select>
+
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Active Employee</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">
+
+                                                        <input class="form-check-input" @bind="e.Active" type="checkbox">
+
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">Seals Employee</p>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <p class="text-muted mb-0">
+
+                                                        <input class="form-check-input" @bind="e.Own" type="checkbox">
+
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                        }
+
+
+
+
+
+                                        @foreach (Degree d in Degrees)
+                                        {
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <p class="mb-0">@d.DegreeName </p>
+                                                </div>
+                                                <div class="col-sm-3">
+                                                    <p class="text-muted mb-0">@d.GradeResult (@d.PassingYear)</p>
+                                                </div>
+
+                                            </div>
+
+                                        }
+
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+
+                                <div class="accordion" id="accordionExample">
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingTwo1">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo1" aria-expanded="false" aria-controls="collapseTwo">
+                                                Employees Work History
+                                            </button>
+                                        </h2>
+                                        <div id="collapseTwo1" class="accordion-collapse collapse" aria-labelledby="headingTwo1" data-bs-parent="#accordionExample">
+                                            <div class="accordion-body">
+                                                <table class="table table-dark">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>
+                                                                Project Name
+                                                            </th>
+                                                            <th>
+                                                                Work Started
+                                                            </th>
+                                                            <th>
+                                                                Work ended
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+
+
+
+                                                        @foreach (var project in projectEmployees.OrderByDescending(x => x.DateStarted))
+                                                        {
+                                                            @if (project.Iscurrent == true)
+                                                            {
+                                                                <tr>
+                                                                    <td class="bg-info text-black">
+                                                                        @(ProjectsWorked.FirstOrDefault(x => x.Id == project.ProjectId).ProjectName)
+
+
+                                                                    </td>
+                                                                    <td class="bg-info text-black">
+                                                                        @project.DateStarted.Value.ToString("dddd, dd MMMM yyyy h:mm tt")
+                                                                    </td>
+                                                                    <td class="bg-info text-black">
+                                                                        @project.DateStarted.Value.ToString("dddd, dd MMMM yyyy h:mm tt")
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                            else
+                                                            {
+
+
+
+                                                                <tr>
+                                                                    <td>
+                                                                        @(ProjectsWorked.FirstOrDefault(x => x.Id == project.ProjectId).ProjectName)
+
+
+                                                                    </td>
+                                                                    <td>
+                                                                        @project.DateStarted.Value.ToString("dddd, dd MMMM yyyy h:mm tt")
+                                                                    </td>
+                                                                    <td>
+                                                                        @project.DateStarted.Value.ToString("dddd, dd MMMM yyyy h:mm tt")
+                                                                    </td>
+                                                                </tr>
+
+
+
+                                                            }
+
+
+
+                                                        }
+                                                    </tbody>
+
+                                                </table>
+
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+
+
+
+
+
+
+
+
+                            </div>
+
+
+                        </div>
+
+
+                    </div>
+                </section>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+
+}
+@code {
+    [Parameter]
+    public string employeeId { get; set; }
+    bool loading = false;
+    bool uploadingDoc = false;
+    bool uploadingCertificate = false;
+    bool editinfo = true;
+    bool updating = false;
+
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+
+
+    List<Doc> docList = new List<Doc>();
+    IFileListEntry file { get; set; }
+
+    IFileListEntry pic { get; set; }
+
+    Degree de = new Degree();
+    List<Degree> Degrees = new List<Degree>();
+    List<Project> ProjectsWorked = new List<Project>();
+    Employee e;
+
+    Viewemployee ve;
+
+    string alart = string.Empty;
+    string alartPic = string.Empty;
+
+    Doc d = new Doc();
+    List<Roll> rolls = new List<Roll>();
+
+    List<ProjectEmployee> projectEmployees = new List<ProjectEmployee>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+        rollId = await localStorage.GetItemAsync<string>("Roll");
+
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            rolls = await dbcontext.Rolls.ToListAsync();
+            Guid id = Guid.Parse(employeeId);
+
+
+            e = dbcontext.Employees.Find(id);
+            ve = dbcontext.Viewemployees.FirstOrDefault(x => x.Id == id);
+
+
+
+            docList = await dbcontext.Docs.Where(x => x.EmployeeId == id).ToListAsync();
+
+            Degrees = await dbcontext.Degrees.Where(x => x.Employeeid == id).ToListAsync();
+
+            projectEmployees = await dbcontext.ProjectEmployees.Where(x => x.EmployeeId == id).ToListAsync();
+
+            ProjectsWorked = await dbcontext.Projects.ToListAsync();
+
+
+        }
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+
+    async Task HandleFileSelected(IFileListEntry[] files)
+    {
+        file = files.FirstOrDefault();
+
+        alart = $"{file.Name} is Ready to upload";
+
+    }
+
+    async Task saveDegree()
+    {
+        uploadingCertificate = true;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            de.Id = Guid.NewGuid();
+            de.Employeeid = Guid.Parse(employeeId);
+            dbcontext.Degrees.Add(de);
+
+            await dbcontext.SaveChangesAsync();
+            Guid id = Guid.Parse(employeeId);
+            Degrees = await dbcontext.Degrees.Where(x => x.Employeeid == id).ToListAsync();
+        }
+
+        de = new Degree();
+
+
+        uploadingCertificate = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task UpdateEmployee()
+    {
+        updating = true;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            if (pic != null)
+            {
+                if (pic.Type == "image/jpeg")
+                {
+                    e.Photo = $"{e.Id}.jpg";
+                    await fileUpload.UploadAsync(pic, $"{e.Id}.jpg", "Photos");
+                }
+                else if (pic.Type == "image/png")
+                {
+                    e.Photo = $"{e.Id}.png";
+                    await fileUpload.UploadAsync(pic, $"{e.Id}.png", "Photos");
+                }
+            }
+
+
+
+
+
+            dbcontext.Update(e);
+            await dbcontext.SaveChangesAsync();
+
+            e = dbcontext.Employees.Find(e.Id);
+            ve = dbcontext.Viewemployees.FirstOrDefault(x => x.Id == e.Id);
+
+        }
+        editinfo = true;
+        updating = false;
+        nav.NavigateTo($"/employee/{e.Id}", forceLoad: true);
+        //await InvokeAsync(StateHasChanged);
+
+    }
+
+
+    async Task save()
+    {
+        uploadingDoc = true;
+        await InvokeAsync(StateHasChanged);
+        string docExt = file.Name.Split('.')[1];
+        string docName = file.Name.Split('.')[0];
+        //Console.WriteLine(docExt);
+
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            await fileUpload.UploadAsync(file, $"{employeeId}{d.DocmentName}.{docExt}", "EmployeeDoc");
+            d.Id = Guid.NewGuid();
+
+            if (!string.IsNullOrWhiteSpace(d.DocmentName) && !string.IsNullOrWhiteSpace(d.DocumentType))
+            {
+                d.EmployeeId = Guid.Parse(employeeId);
+
+                d.DocmentName = $"{d.DocmentName}.{docExt}";
+
+                d.Link = $"EmployeeDoc/{employeeId}{d.DocmentName}";
+
+
+                dbcontext.Docs.Add(d);
+
+                await dbcontext.SaveChangesAsync();
+                d = new Doc();
+                Guid id = Guid.Parse(employeeId);
+                docList = await dbcontext.Docs.Where(x => x.EmployeeId == id).ToListAsync();
+            }
+
+
+        }
+
+
+        uploadingDoc = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+    async Task HandlePicSelected(IFileListEntry[] files)
+    {
+        pic = files.FirstOrDefault();
+
+        try
+        {
+            if (pic.Type == "image/jpeg" || pic.Type == "image/png")
+            {
+                //await fileUpload.UploadAsync(file, "DATA.csv", "CsvFiles");
+                alart = $"{pic.Name} is Ready to upload";
+            }
+            else
+            {
+                alart = "Chose a jpeg or png file";
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch
+        {
+            alart = "File not supprted";
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+
+}

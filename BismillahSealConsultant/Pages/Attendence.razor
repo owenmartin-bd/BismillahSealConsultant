@@ -1,0 +1,852 @@
+﻿@page "/attendence"
+
+@using BlazorInputFile
+@using LumenWorks.Framework.IO.Csv;
+@using System.Data;
+@using System.IO;
+@using System.Globalization;
+@using System;
+@using Microsoft.EntityFrameworkCore
+@using BismillahSealConsultant.Service
+@inject IFileUpload fileUpload
+@using System.Data.SqlClient
+
+@using BismillahSealConsultant.ViewModels;
+
+
+@if (ispageLoading)
+{
+
+    <Chase style="margin-left:45%; margin-top: 45vh;"></Chase>
+
+}
+else
+{
+    @if (true)
+    {
+        <div class="container-fluid shadow" style="min-height:90vh; padding-left:15px">
+            <div class="row">
+
+
+                <div class="col-3">
+                    <div class="form-group">
+                        <h5>Please upload CSV file here</h5>
+                        <BlazorInputFile.InputFile OnChange="HandleFileSelected"></BlazorInputFile.InputFile>
+
+                    </div>
+                    <br />
+                    <button class="btn btn-link"> Click here to download the templete <span class="oi oi-spreadsheet link-success"></span> </button>
+
+                    <br />
+                    @if (file != null)
+                    {
+                        <div class="alert alert-dismissible">
+                            <p> <strong>Uploaded File- </strong>@file.Name</p>
+                            <p> <strong>@alart</strong></p>
+                        </div>
+                    }
+
+
+                </div>
+                <div class="col">
+                    <div class="input-group">
+                    @if (workingHourRuleSchemas != null)
+                    {
+                        <select class="form-select form-select-sm" aria-label=".form-select-sm example" @onchange="(ChangeEventArgs e)=>{ onRuleSchemaSelected(Guid.Parse(e?.Value?.ToString())); }">
+
+
+                            <option selected disabled>CLick to select the Rule</option>
+
+                            @foreach (var w in workingHourRuleSchemas)
+                            {
+                                <option value="@w.SchemaId"> @w.RuleName </option>
+                            }
+                        </select>
+                        @if (_isFacingrules)
+                        {
+                            <button class="btn btn-sm btn-outline-primary">
+
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden"></span>
+                                </div>
+
+                            </button>
+                        }
+
+                    }
+
+                    <button class="btn btn-outline-success" @onclick="calcluateAll">Calculate </button>
+
+                        @if (_isSaving)
+                        {
+                            <button class="btn btn-sm btn-outline-primary">
+
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden"></span>
+                                </div>
+
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-outline-primary" @onclick="save">Save</button>
+                        }
+
+
+                    </div>
+                </div>
+
+            </div>
+
+
+
+
+            <div class="row">
+                <div class="col">
+
+                    <h5>Uploaded Data Rows -  @csvTable.Rows.Count</h5>
+
+
+                </div>
+            </div>
+
+            <div class="row">
+                @if (csvTable.Columns.Count > 0)
+                {
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Code</th>
+                                <th>Date</th>
+                                <th>In Time (Actual)</th>
+                                <th>Out Time (Actual)</th>
+                                <th>In Time </th>
+                                <th>Out Time </th>
+                                <th>On Site</th>
+                                <th>Break Time</th>
+                                <th>Overtime</th>
+                                <th>Actual Hours</th>
+                                <th>Overtime Extra Hours</th>
+                                <th>Total Hours</th>
+                                <th>Rate per Hour</th>
+                                <th>Total Earned</th>
+
+
+                                <th></th>
+                            </tr>
+                        </thead>
+
+
+                        <tbody>
+                            @if (workerPaymentDetailsBydates != null || workerPaymentDetailsBydates.Count >0)
+                            {
+                                @foreach (var e in workerPaymentDetailsBydates)
+                                {
+                                    <tr>
+                                        <td>
+                                            <h6>@employees?.FirstOrDefault(x => x.Id == e.EmployeeId)?.FirstName @employees?.FirstOrDefault(x => x.Id == e.EmployeeId)?.LastName</h6>
+                                        </td>
+                                        <td>
+                                            @employees?.FirstOrDefault(x => x.Id == e.EmployeeId)?.EmployeeCode
+
+                                        </td>
+                                        <td>
+                                            @e.Date
+
+                                        </td>
+
+                                        <td>
+                                            @e.IntimeActual
+
+                                        </td>
+                                        <td>
+                                            @e.OutTimeActual
+
+                                        </td>
+                                        <td>
+                                            @e.InTime
+                                        </td>
+                                        <td>
+                                            @e.OutTime
+                                        </td>
+                                        <td class="text-primary">
+                                            @FormatTimeSpanAsHoursAndMinutes(e.OnSite)
+                                        </td>
+
+                                        <td class="text-danger">
+                                            @FormatTimeSpanAsHoursAndMinutes(e.BreakTime)
+                                        </td>
+
+
+                                        <td class="text-primary">
+                                            @FormatTimeSpanAsHoursAndMinutes(e.ActualHours)
+                                        </td>
+                                        <td class="text-success">
+                                            @if (e.ActualHours > overtimeWorkingHour?.StartAfter)
+                                            {
+                                                @overtimeWorkingHour.StartAfter
+
+                                            }
+                                            else
+                                            {
+                                                @e.ActualHours
+                                            }
+
+                                        </td>
+                                        <td class="text-success">
+                                            @FormatTimeSpanAsHoursAndMinutes(e.OverTime)
+                                        </td>
+                                        <td class="text-success">
+                                            @FormatTimeSpanAsHoursAndMinutes(e.OtExtraHours)
+                                        </td>
+                                        <td class="text-success">
+                                            <h5 style="color:darkgreen">@FormatTimeSpanAsHoursAndMinutes(e.TotalHours)</h5>
+                                        </td>
+                                        <td class="text-primary">
+                                            @e.RatePerHour
+                                        </td>
+                                        <td class="text-dark">
+                                            <h5>@e.TotalEarnedOnDate</h5>
+                                        </td>
+
+                                    </tr>
+
+                                }
+                            }
+                        
+
+
+
+
+                        </tbody>
+
+                    </table>
+
+
+                }
+                else
+                {
+
+
+                }
+
+
+
+
+
+            </div>
+
+
+
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+
+
+}
+
+
+
+
+
+
+@code {
+
+    IFileListEntry file { get; set; }
+
+    bool isSaving = false;
+    bool ispageLoading = true;
+    bool _isSaving = false;
+    bool isLoading = false;
+    bool iscaluclating = false;
+    bool isupdating = false;
+    List<WorkingHourRuleSchema>? workingHourRuleSchemas;
+
+    string alart = string.Empty;
+    DataTable csvTable = new DataTable();
+    bool _isFacingrules = false;
+
+    [CascadingParameter] Blazored.Modal.Services.IModalService Modal { get; set; } = default!;
+
+
+    List<Employee>? employees;
+
+    List<WorkerPaymentDetailsBydate> workerPaymentDetailsBydates = new List<WorkerPaymentDetailsBydate>();
+
+    List<RawFinger> rawFingers = new List<RawFinger>();
+
+    List<EmployeeWithLatestRate>? employeeWithLatestRates;
+
+    //...............................................................
+    List<EntryTime> EntryTimeslots = new List<EntryTime>();
+    List<ExitTime> ExitTimeslots = new List<ExitTime>();
+    List<BreakTime> breakTimes = new List<BreakTime>();
+    OvertimeWorkingHour? overtimeWorkingHour;
+
+    WorkingHourRuleSchema? SelectedSchema;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ispageLoading = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+            employees = await dbcontext.Employees.ToListAsync();
+
+           // groups = await dbcontext.Groups.ToListAsync();
+
+            workingHourRuleSchemas = await dbcontext.WorkingHourRuleSchemas.ToListAsync();
+
+            employeeWithLatestRates = await dbcontext.EmployeeWithLatestRates.ToListAsync();
+
+        }
+        ispageLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+
+    async Task HandleFileSelected(IFileListEntry[] files)
+    {
+        file = files.FirstOrDefault();
+        csvTable = new DataTable();
+
+
+        try
+        {
+            if (file.Type == "text/csv")
+            {
+                await fileUpload.UploadAsync(file, "DATA.csv", "CsvFiles");
+                alart = "File Uploaded";
+            }
+            else
+            {
+                alart = "Chose a csv file";
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch
+        {
+            alart = "File Not uploaded try again";
+            await InvokeAsync(StateHasChanged);
+        }
+
+        await loadData();
+
+        alart = "Data reading finished";
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    async Task loadData()
+    {
+        alart = "Loading data";
+        isSaving = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await Task.Run(() =>
+            {
+                using (var stream = File.OpenRead(@"wwwroot/CsvFiles/DATA.csv"))
+                using (var reader = new StreamReader(stream))
+                using (var csvReader = new CsvReader(reader, hasHeaders: true))
+                {
+                    csvTable.Clear(); // Clear existing data to prevent mixing old and new data
+                    csvTable.Load(csvReader);
+
+                }
+            });
+            //  Console.WriteLine("reading finished");
+        }
+        catch (Exception ex)
+        {
+            alart = ex.ToString();
+            await InvokeAsync(StateHasChanged); // Ensure UI thread is used for state changes if necessary
+        }
+
+        await readData();
+
+
+
+    }
+
+    async Task readData()
+    {
+        await Task.Run(() =>
+        {
+
+
+
+            for (int i = 0; i < csvTable.Rows.Count; i++)
+            {
+
+
+
+                RawFinger rawFinger = new RawFinger();
+                rawFinger.ID = Guid.NewGuid();
+
+                if (csvTable.Rows[i][0] != DBNull.Value)
+                {
+
+                    rawFinger.EmployeeCode = csvTable.Rows[i][0].ToString()?.TrimStart('0');
+
+
+                }
+                if (csvTable.Rows[i][1] != DBNull.Value && csvTable.Rows[i][2] != DBNull.Value)
+                {
+
+                    rawFinger.fingerTime = ConvertToDateTime(csvTable.Rows[i][1].ToString(), csvTable.Rows[i][2].ToString());
+
+
+                }
+
+                rawFingers.Add(rawFinger);
+
+
+            }
+            rawFingers = rawFingers.OrderBy(x => x.EmployeeCode).ToList();
+
+
+        });
+
+
+
+
+
+        await formatData();
+
+        isSaving = false;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+
+    async Task formatData()
+    {
+        await Task.Run(() =>
+        {
+            // Assuming 'employees' is already populated and available here
+
+            // Create a HashSet for quick lookup of employee codes
+            var validEmployeeCodes = new HashSet<string>(employees.Select(e => e.EmployeeCode));
+
+            // Group RawFinger records by EmployeeCode and sort each group by fingerTime
+            var groupedFingers = rawFingers
+                .Where(f => validEmployeeCodes.Contains(f.EmployeeCode))  // Filter RawFinger records for valid employee codes
+                .GroupBy(f => f.EmployeeCode)
+                .ToDictionary(g => g.Key, g => g.OrderBy(f => f.fingerTime).ToList());
+
+            // Process each group to determine in-time and out-time
+            foreach (var group in groupedFingers)
+            {
+                WorkerPaymentDetailsBydate currentRecord = null;
+                for (int i = 0; i < group.Value.Count; i++)
+                {
+                    if (i % 2 == 0) // Even index, treat as in-time
+                    {
+                        // Create a new WorkerPaymentDetailsBydate record
+                        currentRecord = new WorkerPaymentDetailsBydate
+                            {
+                                Id = Guid.NewGuid(),
+                                EmployeeId = employees.FirstOrDefault(e => e.EmployeeCode == group.Key)?.Id, // Set EmployeeId from the Employee list
+                                IntimeActual = group.Value[i].fingerTime,
+                                //Date = group.Value[i].fingerTime.HasValue ? DateOnly.FromDateTime(group.Value[i].fingerTime.Value) : null
+                            };
+                        if (currentRecord.IntimeActual != null)
+                        {
+                            currentRecord.Date = DateOnly.FromDateTime(currentRecord.IntimeActual.Value);
+                        }
+
+                    }
+                    else // Odd index, treat as out-time
+                    {
+                        if (currentRecord != null)
+                        {
+                            currentRecord.OutTimeActual = group.Value[i].fingerTime;
+
+                            // Add to the list if both in-time and out-time are set
+                            workerPaymentDetailsBydates.Add(currentRecord);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+
+
+
+
+
+
+
+//......Calaculation...................................................................................................................................
+    void caluculate(Guid WorkerPaymentDetailsId)
+    {
+        if (SelectedSchema != null)
+        {
+            var spd = workerPaymentDetailsBydates.FirstOrDefault(x => x.Id == WorkerPaymentDetailsId);
+
+            var employee = employees.FirstOrDefault(x => x.Id == spd.EmployeeId);
+
+            if (spd != null && spd.IntimeActual != null && spd.OutTimeActual != null)
+            {
+
+
+
+                foreach (var intime in EntryTimeslots)
+                {
+
+                    if (TimeOnly.FromDateTime(spd.IntimeActual.Value) > intime.StartTine && TimeOnly.FromDateTime(spd.IntimeActual.Value) <= intime.EndTime)
+                    {
+
+                        string Entry = $"{spd.IntimeActual.Value.ToString("MM/dd/yyyy")} {intime.TakenTime}";
+
+                        Console.WriteLine(Entry);
+
+                        spd.InTime = DateTime.Parse(Entry);
+
+
+                    }
+
+
+                }
+
+                foreach (var Outtime in ExitTimeslots)
+                {
+                    if (TimeOnly.FromDateTime(spd.OutTimeActual.Value) > Outtime.StartTine && TimeOnly.FromDateTime(spd.OutTimeActual.Value) <= Outtime.EndTime)
+                    {
+
+                        string Exit = $"{spd.OutTimeActual.Value.Date.ToString("MM/dd/yyyy")} {Outtime.TakenTime}";
+
+                        Console.WriteLine(Exit);
+
+                        spd.OutTime = DateTime.Parse(Exit);
+
+
+                    }
+
+
+                }
+
+                spd.OnSite = spd.OutTime - spd.InTime;
+
+                spd.ActualHours = spd.OnSite;
+
+                spd.BreakTime = new TimeSpan(0, 0, 0, 0);
+                Console.WriteLine($"mew...................................................................................");
+                foreach (var bt in breakTimes)
+                {
+
+
+                    Console.WriteLine($"{bt.StartTime} - {bt.EndTime}");
+
+                    spd.ActualHours = spd.ActualHours - DeductBreakTimeAcrossMultipleDays(spd.InTime, spd.OutTime, bt.StartTime, bt.EndTime);
+
+                    spd.BreakTime = spd.BreakTime + DeductBreakTimeAcrossMultipleDays(spd.InTime, spd.OutTime, bt.StartTime, bt.EndTime);
+
+                    Console.WriteLine($"{DeductBreakTimeAcrossMultipleDays(spd.InTime, spd.OutTime, bt.StartTime, bt.EndTime)}");
+                }
+
+                if (spd.ActualHours > overtimeWorkingHour.StartAfter)
+                {
+                    spd.OverTime = spd.ActualHours - overtimeWorkingHour.StartAfter;
+                }
+                else
+                {
+                    spd.OverTime = new TimeSpan(0, 0, 0, 0);
+                }
+
+
+                spd.OtExtraHours = ConvertTimeSpan(overtimeWorkingHour.IcreamentCount, spd.OverTime) - spd.OverTime;
+
+                spd.TotalHours = spd.ActualHours + spd.OtExtraHours;
+
+                spd.TotalHours = RoundToNearestHalfHour(spd.TotalHours);
+
+                var rate = employeeWithLatestRates.FirstOrDefault(x => x.EmployeeId == employee.Id);
+
+                if (rate != null && rate.LatestRate != null)
+                {
+                    spd.RatePerHour = (decimal)rate.LatestRate;
+                }
+
+
+                spd.TotalEarnedOnDate = CalculatePayment(spd.TotalHours, spd.RatePerHour);
+
+                spd.SchemaId = SelectedSchema.SchemaId;
+
+                StateHasChanged();
+
+
+            }
+        }
+        else
+        {
+
+        }
+
+
+    }
+
+
+    TimeSpan? RoundToNearestHalfHour(TimeSpan? time)
+    {
+        if (!time.HasValue)
+        {
+            return null; // Return null if the input TimeSpan is null
+        }
+
+        int minutes = time.Value.Minutes;
+        int baseMinutes = (minutes / 30) * 30; // Get the nearest lower multiple of 30
+        int roundedMinutes = minutes % 30 >= 15 ? baseMinutes + 30 : baseMinutes; // Round to nearest 30
+        int additionalHours = roundedMinutes == 60 ? 1 : 0;
+        return new TimeSpan(time.Value.Hours + additionalHours, roundedMinutes % 60, 0);
+    }
+
+
+
+
+
+
+
+
+    decimal? CalculatePayment(TimeSpan? timeWorked, decimal? hourlyRate)
+    {
+        // Check if either parameter is null
+        if (!timeWorked.HasValue || !hourlyRate.HasValue)
+        {
+            // One or both parameters are null, so we cannot calculate the payment
+            return null;
+        }
+
+        // Convert the TimeSpan to total hours as a double, then cast to decimal
+        decimal hoursWorked = (decimal)timeWorked.Value.TotalHours;
+
+        // Calculate the payment
+        decimal payment = hoursWorked * hourlyRate.Value;
+
+        return payment;
+    }
+
+
+
+    TimeSpan? ConvertTimeSpan(TimeSpan? specificTimeSpan, TimeSpan? totalTime)
+    {
+        // Check if any of the parameters is null
+        if (specificTimeSpan == null || totalTime == null)
+        {
+            return null;
+        }
+
+        // Calculate the conversion factor by dividing the total minutes of totalTime by 60 (to convert to hours)
+        double conversionFactor = ((TimeSpan)totalTime).TotalMinutes / 60;
+
+        // Convert the specificTimeSpan hours to the new time span using the conversion factor
+        double newHours = ((TimeSpan)specificTimeSpan).TotalHours * conversionFactor;
+
+        // Convert the fractional hours back to a TimeSpan
+        TimeSpan result = TimeSpan.FromHours(newHours);
+
+        return result;
+    }
+
+    TimeSpan? DeductBreakTimeAcrossMultipleDays(DateTime? inTime, DateTime? outTime, TimeOnly? breakStart, TimeOnly? breakEnd)
+    {
+        // Check for null values and handle them as needed
+        if (!inTime.HasValue || !outTime.HasValue || !breakStart.HasValue || !breakEnd.HasValue)
+        {
+            // Return null or throw an exception or handle it as per your requirement
+            return null; // Indicating that deduction can't be calculated
+        }
+
+        // Initialize totalDeduction
+        TimeSpan totalDeduction = TimeSpan.Zero;
+
+        // The first day's date
+        DateTime currentDate = inTime.Value.Date;
+
+        // Continue until we've covered all days up to and including the outTime's date
+        while (currentDate <= outTime.Value.Date)
+        {
+            // For the first day, use inTime, and for subsequent days, use the start of the day
+            TimeOnly currentDayInTime = currentDate == inTime.Value.Date ? TimeOnly.FromDateTime(inTime.Value) : TimeOnly.MinValue;
+
+            // For the last day, use outTime, and for previous days, use the end of the day
+            TimeOnly currentDayOutTime = currentDate == outTime.Value.Date ? TimeOnly.FromDateTime(outTime.Value) : TimeOnly.MaxValue;
+
+            // Deduct break time for the current day if the work period overlaps with the break time
+            if (!(currentDayOutTime <= breakStart.Value || currentDayInTime >= breakEnd.Value))
+            {
+                if (currentDayInTime <= breakStart.Value && currentDayOutTime >= breakEnd.Value)
+                {
+                    // Deduct entire break duration
+                    totalDeduction += breakEnd.Value - breakStart.Value;
+                }
+                else if (currentDayInTime >= breakStart.Value && currentDayOutTime <= breakEnd.Value)
+                {
+                    // Deduct the duration between in-time and out-time
+                    totalDeduction += currentDayOutTime - currentDayInTime;
+                }
+                else if (currentDayInTime <= breakStart.Value && currentDayOutTime <= breakEnd.Value)
+                {
+                    // Deduct the duration between breakStart and out-time
+                    totalDeduction += currentDayOutTime - breakStart.Value;
+                }
+                else if (currentDayInTime >= breakStart.Value && currentDayOutTime >= breakEnd.Value)
+                {
+                    // Deduct the duration between in-time and breakEnd
+                    totalDeduction += breakEnd.Value - currentDayInTime;
+                }
+            }
+
+            // Move to the next day
+            currentDate = currentDate.AddDays(1);
+        }
+
+        return totalDeduction;
+    }
+
+
+
+    string FormatTimeSpanAsHoursAndMinutes(TimeSpan? timeSpan)
+    {
+        // Check if the input is null
+        if (!timeSpan.HasValue)
+        {
+            return ""; // Or any other default value you prefer
+        }
+
+        // Calculate total hours and get minutes from the non-null TimeSpan
+        int totalHours = (int)Math.Floor(timeSpan.Value.TotalHours);
+        int minutes = timeSpan.Value.Minutes;
+
+        // Format and return the string
+        return $"{totalHours:00}:{minutes:00}";
+    }
+
+    async Task onRuleSchemaSelected(Guid id)
+    {
+        _isFacingrules = true;
+        await InvokeAsync(StateHasChanged);
+        SelectedSchema = workingHourRuleSchemas.FirstOrDefault(x => x.SchemaId == id);
+
+
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            EntryTimeslots = await dbcontext.EntryTimes.Where(x => x.SchemaId == SelectedSchema.SchemaId).ToListAsync();
+            ExitTimeslots = await dbcontext.ExitTimes.Where(x => x.SchemaId == SelectedSchema.SchemaId).ToListAsync();
+            breakTimes = await dbcontext.BreakTimes.Where(x => x.SchemaId == SelectedSchema.SchemaId).ToListAsync();
+            overtimeWorkingHour = await dbcontext.OvertimeWorkingHours.FirstOrDefaultAsync(x => x.SchemaId == SelectedSchema.SchemaId);
+            await InvokeAsync(StateHasChanged);
+
+
+        }
+
+
+
+
+        _isFacingrules = false;
+        await InvokeAsync(StateHasChanged);
+    }
+//.........................................................................................................................................
+    void calcluateAll()
+    {
+        @foreach (var e in workerPaymentDetailsBydates)
+        {
+            caluculate(e.Id);
+        }
+    }
+
+    async Task save()
+    {
+        // _isSaving = true;
+        // await InvokeAsync(StateHasChanged);
+
+
+        // using (sealConsultantContext dbcontext = new sealConsultantContext())
+        // {
+        //     List<WorkerPaymentDetailsBydate> workerPaymentDetailsBydatesExisting = await dbcontext.WorkerPaymentDetailsBydates.Where(x => x.Date == selectedDate).ToListAsync();
+
+        //     workerPaymentDetailsBydatesnotAdded = new List<WorkerPaymentDetailsBydate>();
+
+
+        //     foreach (var w in workerPaymentDetailsBydates)
+        //     {
+        //         if (w.InTime != null && w.OutTime != null)
+        //         {
+        //             if (workerPaymentDetailsBydatesExisting.FirstOrDefault(x => x.EmployeeId == w.EmployeeId) == null)
+        //             {
+
+        //                 w.Date = selectedDate;
+
+        //                 dbcontext.WorkerPaymentDetailsBydates.Add(w);
+
+
+
+        //             }
+        //             else
+        //             {
+        //                 workerPaymentDetailsBydatesnotAdded.Add(w);
+        //             }
+
+        //         }
+
+        //     }
+        //     await dbcontext.SaveChangesAsync();
+
+        // }
+
+        // await onGroupSelected(selectedGroup.Id);
+
+
+        // _isSaving = false;
+
+        // await InvokeAsync(StateHasChanged);
+
+
+    }
+
+    DateTime? ConvertToDateTime(string? date, string? time)
+    {
+        if (string.IsNullOrEmpty(date) || string.IsNullOrEmpty(time))
+        {
+            return null;
+        }
+
+        try
+        {
+            // Parsing the date
+            DateTime parsedDate = DateTime.ParseExact(date, "yyyyMMdd", CultureInfo.InvariantCulture);
+
+            // Parsing the time
+            DateTime parsedTime = DateTime.ParseExact(time, "HH:mm:ss", CultureInfo.InvariantCulture);
+
+            // Creating the final DateTime object
+            DateTime finalDateTime = new DateTime(parsedDate.Year, parsedDate.Month, parsedDate.Day,
+                                                  parsedTime.Hour, parsedTime.Minute, parsedTime.Second);
+            return finalDateTime;
+        }
+        catch (FormatException)
+        {
+            // Handle format errors if date or time are not in the expected format
+            return null;
+        }
+    }
+
+}
+
+

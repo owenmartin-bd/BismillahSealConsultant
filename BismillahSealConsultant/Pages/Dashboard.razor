@@ -1,0 +1,578 @@
+﻿@page "/" 
+
+@*  change it to "/" *@
+
+@inject NavigationManager nav
+
+@if (loading)
+{
+    <Chase></Chase>
+}
+else
+{
+
+    @if (logger.checkAccess("/home", rollId))
+    {
+        <div class="container-fluid">
+            <div class="row shadow-lg rounded-2">
+                <div class="col-3" style="padding:5px">
+                    <div class="card" style="background: linear-gradient(to right, #83a4d4, #b6fbff);">
+                        <div class="card-body">
+
+                            <h5 class="card-title">Passport exp @defaultpasport</h5>
+                            <h3 class="card-subtitle mb-2 text-muted">@number_of_employee_passport_expired </h3>
+                            <label class="card-text">Select date Passport exp after</label>
+                            <input type="date" class="form-control" @onchange="@((ChangeEventArgs __e) =>searchpassportExp( __e?.Value?.ToString()) )" />
+
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3" style="padding:5px">
+                    <div class="card" style="background: linear-gradient(to right, #ada996, #f2f2f2, #dbdbdb, #eaeaea);">
+                        <div class="card-body">
+
+                            <h5 class="card-title">Visa exp @defaultvisa</h5>
+                            <h3 class="card-subtitle mb-2 text-muted">@number_of_employee_visa_expired </h3>
+                            <label class="card-text">Select date visa exp after</label>
+                            <input type="date" class="form-control" @onchange="@((ChangeEventArgs __e) =>searchvisaExp( __e?.Value?.ToString()) )" />
+
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3" style="padding:5px">
+                    <div class="card" style="background: linear-gradient(to right, #6190e8, #a7bfe8);">
+                        <div class="card-body">
+
+                            <h5 class="card-title">CIDB exp @defaultCidb</h5>
+                            <h3 class="card-subtitle mb-2 text-muted">@number_of_employee_cidb_expired </h3>
+                            <label class="card-text">Select date visa exp after</label>
+                            <input type="date" class="form-control" @onchange="@((ChangeEventArgs __e) =>searchCidbExp( __e?.Value?.ToString()) )" />
+
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3" style="padding:5px">
+                    <div class="card" style="background: linear-gradient(to right, #b2fefa, #0ed2f7);">
+                        <div class="card-body">
+
+                            <h5 class="card-title">Total Employee (active) </h5>
+                            <h3 class="card-subtitle mb-2 text-muted">@number_of_active_employee </h3>
+                            <p class="card-text">Local- @number_of_local_employee Foreign- @number_of_foraign_employee</p>
+
+
+                            <button class="btn btn-danger btn-sm" @onclick="@(()=>nav.NavigateTo("/employees"))">See Details</button>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="row shadow-lg rounded-2">
+                <div class="col-2" style="padding:5px">
+                    <div class="card" style="background: linear-gradient(to right, #b2fefa, #0ed2f7);">
+                        <div class="card-body">
+
+                            <h5 class="card-title"> Salary for @DateTime.Now.Month / @DateTime.Now.Year </h5>
+                            <h3 class="card-subtitle mb-2 text-muted"> @number_of_employee_salaried </h3>
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @* ...........................................................................................................................................*@
+            <div class="row shadow-lg rounded-2">
+                <div class="col-6" style="padding:5px">
+                    <div class="card bg-info bg-gradient">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text" id="basic-addon1">Start Date</span>
+                                        <input type="date" style="max-width:200px" class="form-control" @bind="dateofFlagingStart" />
+                                        <span class="input-group-text" id="basic-addon1">End Date</span>
+                                        <input type="date" style="max-width:200px" class="form-control" @bind="dateofFlagingEnd" />
+                                    </div>
+                                </div>
+                                <div class="col-6">
+
+
+                                    <div class="alert alert-warning m-1">
+                                        @Urevieweddatelist.Distinct().Count() days has pending Records, to be reviewed <button class="btn btn-link" @onclick="showdetails">Details</button>
+                                    </div>
+
+
+
+                                </div>
+                            </div>
+
+                            @if (GetingWorkingHours)
+                            {
+                                <div class="p-2 m-1 shadow-lg">
+                                    <Chase></Chase>
+
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="p-2 m-1 shadow-lg" style="max-height:20vh; overflow-y:auto">
+                                    <table class="table table-secondary">
+                                        <thead style="position:sticky;top:0">
+                                            <tr>
+                                                <th>
+                                                    Date
+                                                </th>
+                                                <th>
+                                                    Uploaded Record
+                                                </th>
+                                                <th>
+                                                    flagged
+                                                </th>
+                                                <th>
+                                                    Corrected
+                                                </th>
+                                                <th>
+                                                    Pending
+                                                </th>
+                                            </tr>
+
+                                        </thead>
+                                        <tbody>
+                                            @if (dateofFlagingStart != null && dateofFlagingEnd != null)
+                                            {
+                                                <tr class="table-dark">
+                                                    <td>
+                                                        Total -
+                                                    </td>
+                                                    <td>
+                                                        @workerWorkingHours.Count()
+                                                    </td>
+                                                    <td>
+                                                        @workerWorkingHours.Where(x=>x.WokingHours>new TimeSpan(0, 14, 0, 0, 0)).Count()
+                                                    </td>
+                                                    <td>
+                                                        @workerWorkingHours.Where(x=>x.WorkingHoursRevised!=null).Count()
+                                                    </td>
+                                                    <td>
+                                                        @workerWorkingHours.Where(x=>x.WokingHours>new TimeSpan(0, 14, 0, 0, 0) && x.WorkingHoursRevised==null).Count()
+                                                    </td>
+                                                </tr>
+
+
+
+
+
+
+                                                @for (DateOnly idate = dateofFlagingStart.Value; idate <= dateofFlagingEnd; idate = idate.AddDays(1))
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            @idate.ToString("dddd, dd MMMM yyyy")
+                                                        </td>
+                                                        <td>
+                                                            @workerWorkingHours.Where(x=>x.Date == idate).Count()
+                                                        </td>
+                                                        <td>
+                                                            @workerWorkingHours.Where(x=>x.Date == idate && x.WokingHours>new TimeSpan(0, 14, 0, 0, 0)).Count()
+                                                        </td>
+                                                        <td>
+                                                            @workerWorkingHours.Where(x=>x.Date == idate && x.WorkingHoursRevised!=null).Count()
+                                                        </td>
+                                                        <td>
+                                                            @workerWorkingHours.Where(x=>x.Date == idate && x.WokingHours>new TimeSpan(0, 14, 0, 0, 0) && x.WorkingHoursRevised==null).Count()
+                                                        </td>
+                                                    </tr>
+                                                }
+
+                                            }
+                                        </tbody>
+
+                                    </table>
+
+
+                                </div>
+                            }
+
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="row shadow-lg rounded-2">
+                <div class="col-3" style="padding:5px; height:600px; overflow-y:auto">
+                    <table class="table table-dark table-responsive">
+                        <thead>
+                            <tr>
+                                <th>
+                                    Project Name
+                                </th>
+                                <th>
+                                    Employees
+                                </th>
+                                <th>
+                                    Active
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            @foreach (Project p in projectList)
+                            {
+                                <tr @onclick="()=>selectProject = p">
+                                    @if (selectProject != null && p.Id == selectProject.Id)
+                                    {
+                                        <td class="bg-white text-black">
+                                            @p.ProjectName
+                                        </td>
+                                        <td class="bg-white text-black">
+                                            @(ProjectEmployeeList.Where(x => x.ProjectId == p.Id).Count())
+                                        </td>
+
+                                        <td class="bg-white text-black">
+                                            <input class="form-check-input" @bind="p.IsActive" type="checkbox" disabled>
+                                        </td>
+
+                                    }
+                                    else
+                                    {
+                                        <td>
+                                            @p.ProjectName
+                                        </td>
+                                        <td>
+                                            @(ProjectEmployeeList.Where(x => x.ProjectId == p.Id).Count())
+                                        </td>
+
+                                        <td>
+                                            <input class="form-check-input" @bind="p.IsActive" type="checkbox" disabled>
+                                        </td>
+                                    }
+
+
+                                </tr>
+                            }
+
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="col-3" style="padding:5px; height:600px; overflow-y:auto">
+
+                    <table class="table table-dark table-responsive">
+                        <thead>
+                            <tr>
+                                <th>
+                                    Roll
+                                </th>
+                                <th>
+                                    Number Of Emplloyees
+                                </th>
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (selectProject != null)
+                            {
+                                foreach (Guid v in ProjectEmployeeList.Where(x => x.Rollid != null && x.ProjectId == selectProject.Id).Select(x => x.Rollid).Distinct())
+                                {
+
+                                    <tr>
+                                        <td>
+                                            @rolls.FirstOrDefault(x=>x.Id==v).Name
+                                        </td>
+                                        <td>
+                                            @ProjectEmployeeList.Where(x=> x.Rollid==v).Count()
+                                        </td>
+                                    </tr>
+
+
+
+                                }
+
+                            }
+
+
+
+                        </tbody>
+                    </table>
+
+
+
+
+
+                </div>
+
+
+
+                <div class="col-6" style="padding:5px; height:600px; overflow-y:auto">
+                    <table class="table table-dark table-responsive">
+                        <thead>
+                            <tr>
+                                <th>
+                                    Group Name
+                                </th>
+                                <th>
+                                    Team Details
+                                </th>
+                            </tr>
+                        </thead>
+                        @if (selectProject != null)
+                        {
+                            @foreach (Group g in groups.Where(x => x.ProjectId == selectProject.Id))
+                            {
+
+                                <tbody>
+
+                                    <tr>
+                                        <td>
+                                            @g.GroupName
+                                        </td>
+                                        <td>
+                                            <table class="table table-dark table-responsive">
+                                                <thead>
+                                                    <tr>
+                                                        <th>
+                                                            Team Name
+                                                        </th>
+                                                        <th>
+                                                            Team Purpose
+                                                        </th>
+                                                        <th>
+                                                            Number Of Emplloyees
+                                                        </th>
+
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+
+                                                    @foreach (ProjectTeam team in projectTeams.Where(x => x.ProjectId == selectProject.Id && x.GroupId == g.Id))
+                                                    {
+                                                        <tr>
+                                                            <td>
+                                                                @team.TeamName
+                                                            </td>
+                                                            <td>
+                                                                @team.TeamPurpose
+                                                            </td>
+                                                            <td>
+                                                                @teamEmployees.Where(x=>x.TeamId == team.TeamId).Count()
+                                                            </td>
+
+                                                        </tr>
+
+                                                    }
+
+
+
+
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </tbody>
+
+
+                            }
+                        }
+
+                    </table>
+                </div>
+
+
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="col">
+                <img src="download.jpg" class="img-fluid" alt="Responsive image">
+            </div>
+        </div>
+    }
+
+  
+}
+
+
+
+
+@code {
+    //cidb exp
+    //total number of employee
+    // support stuff
+    // active project
+    //
+    Logger logger = new Logger();
+    string rollId = string.Empty;
+
+
+    bool loading = false;
+    bool GetingWorkingHours = false;
+
+    int number_of_employee_passport_expired = 0;
+    int number_of_employee_visa_expired = 0;
+    int number_of_employee_cidb_expired = 0;
+    int number_of_active_employee = 0;
+    int number_of_local_employee = 0;
+    int number_of_foraign_employee = 0;
+    int number_of_employee_salaried = 0;
+
+
+    int numberOfFlagedWorkingHours = 0;
+    int numberofRevisedWorkingHours = 0;
+    int numberofTotalingHours = 0;
+
+    string defaultCidb = "(3 months)";
+    string defaultpasport = "(3 months)";
+    string defaultvisa = "(3 months)";
+    int pendingData = 0;
+
+    DateTime salaryMonth = DateTime.Now;
+
+    [CascadingParameter] Blazored.Modal.Services.IModalService Modal { get; set; } = default!;
+
+
+    List<Employee> employeeList = new List<Employee>();
+    List<Employee> employeeListSearched = new List<Employee>();
+    List<Project> projectList = new List<Project>();
+    List<ProjectEmployee> ProjectEmployeeList = new List<ProjectEmployee>();
+    List<Roll> rolls = new List<Roll>();
+    List<ProjectTeam> projectTeams = new List<ProjectTeam>();
+    List<Group> groups = new List<Group>();
+    List<TeamEmployee> teamEmployees = new List<TeamEmployee>();
+    List<ProjectTeam> projects = new List<ProjectTeam>();
+
+    List<WorkerWorkingHour> workerWorkingHours;
+    List<DateOnly?> Urevieweddatelist = new List<DateOnly?>();
+    Project selectProject;
+
+    DateOnly dateExpPass = DateOnly.FromDateTime(DateTime.Now.AddMonths(+3));
+
+    DateOnly dateExpVisa = DateOnly.FromDateTime(DateTime.Now.AddMonths(+3));
+
+    DateOnly dateExpCidb = DateOnly.FromDateTime(DateTime.Now.AddMonths(+3));
+
+    DateOnly? dateofFlagingStart = DateOnly.FromDateTime(DateTime.Now.AddDays(-7));
+    DateOnly? dateofFlagingEnd = DateOnly.FromDateTime(DateTime.Now);
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            rollId = await localStorage.GetItemAsync<string>("Roll");
+
+
+            employeeList = await dbcontext.Employees.OrderBy(x => x.FirstName).ToListAsync();
+
+            number_of_employee_passport_expired = employeeList.Where(x => x.PassExp < dateExpPass && x.Active == true).Count();
+
+            number_of_employee_visa_expired = employeeList.Where(x => x.VisaExp < dateExpVisa && x.Active == true).Count();
+
+            number_of_active_employee = await dbcontext.Employees.Where(x => x.Active == true).CountAsync();
+
+            number_of_local_employee = await dbcontext.Employees.Where(x => x.Active == true && x.Nationality == "Malaysia").CountAsync();
+
+            number_of_foraign_employee = await dbcontext.Employees.Where(x => x.Active == true && x.Nationality != "Malaysia").CountAsync();
+
+            number_of_employee_salaried = await dbcontext.Depatches.Where(x => x.Month.Value.Month == salaryMonth.Month).CountAsync();
+
+            projectList = await dbcontext.Projects.OrderBy(x => x.IsActive).ToListAsync();
+
+            ProjectEmployeeList = await dbcontext.ProjectEmployees.ToListAsync();
+
+            rolls = await dbcontext.Rolls.ToListAsync();
+
+            groups = await dbcontext.Groups.ToListAsync();
+
+            projectTeams = await dbcontext.ProjectTeams.ToListAsync();
+
+            teamEmployees = await dbcontext.TeamEmployees.ToListAsync();
+
+            employeeListSearched = employeeList;
+            workerWorkingHours = await dbcontext.WorkerWorkingHours.ToListAsync();
+
+
+            foreach (var d in workerWorkingHours)
+            {
+                if (d.WokingHours > new TimeSpan(0, 14, 0, 0, 0) && d.WorkingHoursRevised == null)
+                {
+                    Urevieweddatelist.Add(d.Date);
+
+                }
+            }
+
+        }
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+
+
+    void searchpassportExp(string dateS)
+    {
+        dateExpPass = DateOnly.Parse(dateS);
+        number_of_employee_passport_expired = employeeList.Where(x => x.PassExp < dateExpPass).Count();
+
+        defaultpasport = $"Showing after {dateExpPass}";
+
+        StateHasChanged();
+    }
+
+    void searchvisaExp(string dateS)
+    {
+        dateExpVisa = DateOnly.Parse(dateS);
+        number_of_employee_visa_expired = employeeList.Where(x => x.VisaExp < dateExpVisa).Count();
+        defaultvisa = $"Showing after {dateExpVisa}";
+        StateHasChanged();
+
+    }
+
+    void searchCidbExp(string dateS)
+    {
+        dateExpCidb = DateOnly.Parse(dateS);
+        number_of_employee_cidb_expired = employeeList.Where(x => x.CidbExpDate < dateExpCidb).Count();
+        defaultCidb = $"Showing after {dateExpCidb}";
+        StateHasChanged();
+
+    }
+
+    async Task searchAttendanceAnomaly(string dateS)
+    {
+        GetingWorkingHours = true;
+        await InvokeAsync(StateHasChanged);
+
+
+        dateofFlagingStart = DateOnly.Parse(dateS);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+
+
+
+
+
+        }
+
+
+        GetingWorkingHours = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    void showdetails()
+    {
+
+
+
+        var parameters = new ModalParameters().Add(nameof(ShowdatesModal.Urevieweddatelist),Urevieweddatelist);
+
+        var modal = Modal.Show<ShowdatesModal>("List of dates has pending flag", parameters);
+
+    }
+}

@@ -1,0 +1,137 @@
+﻿@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject NavigationManager nav
+
+<div class="px-4 py-5 px-md-5 text-center text-lg-start" style=" min-height: 95vh;">
+    <div class="container login-form">
+        <!-- Section: Design Block -->
+        <section class=" text-center text-lg-start login-section">
+
+            <div class="card mb-3">
+                <div class="row g-0 d-flex align-items-center">
+                    <div class="col-lg-4 d-none d-lg-flex">
+                        <img src="login-cover4.png" alt="Trendy Pants and Shoes"
+                             class="w-100 rounded-t-5 rounded-tr-lg-0 rounded-bl-lg-5" />
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="card-body py-5 px-md-5">
+                            <div class="card-body p-5 text-center"> <h3 class="mb-5">Sign in</h3> </div>
+
+                            <!-- Email input -->
+                            <div class="form-outline mb-4">
+                                <label class="form-label" for="form2Example1">Email address</label>
+                                <input type="email" id="form2Example1" @bind="admin.Email" class="form-control" />
+
+                            </div>
+
+                            <!-- Password input -->
+                            <div class="form-outline mb-4">
+                                <label class="form-label" for="form2Example2">Password</label>
+                                <input type="password" id="form2Example2" @bind="admin.Password" class="form-control" />
+
+                            </div>
+
+                          
+
+                            @if (isloading)
+                            {
+                                <Chase></Chase>
+                            }
+                            else
+                            {
+
+                                <button @onclick="login" type="button" class="btn btn-primary btn-block mb-4 sign-in-btn">Sign in</button>
+                            }
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Section: Design Block -->
+    </div>
+</div>
+@code {
+
+    DataModels.Viewadmin admin = new Viewadmin();
+    bool isloading = false;
+
+    [CascadingParameter] Blazored.Modal.Services.IModalService Modal { get; set; } = default!;
+
+    private async Task ShowModal(string message)
+    {
+        var parameters = new ModalParameters().Add(nameof(OkModal.Message), message);
+
+        var modal = Modal.Show<OkModal>("Confimation", parameters);
+
+
+        var result = await modal.Result;
+
+    }
+    async Task login()
+    {
+        isloading = true;
+        await InvokeAsync(StateHasChanged);
+
+        using (sealConsultantContext dbcontext = new sealConsultantContext())
+        {
+            var e = await dbcontext.Employees.FirstOrDefaultAsync(x => x.Email == admin.Email && x.Password == admin.Password);
+
+            if (e != null)
+            {
+                var a = await dbcontext.Admins.FirstOrDefaultAsync(x => x.Rollid == e.RollId);
+
+
+
+                if (a != null)
+                {
+                    var roll = await dbcontext.Rolls.FirstOrDefaultAsync(x => x.Id == a.Rollid);
+
+                    if (roll != null)
+                    {
+                        await localStorage.SetItemAsync("LoggegIn", "True");
+                        await localStorage.SetItemAsync("Roll", roll.Id.ToString());
+                        await localStorage.SetItemAsync("ID", e.Id.ToString());
+
+                        nav.NavigateTo("/");
+
+                        // Log log = new Log()
+                        //     {
+                        //         Item = $"{e.FirstName} {e.LastName} {e.IcPp} has logged in at",
+                        //         DateTime = DateTime.Now
+                        //     };
+
+                        // dbcontext.Logs.Add(log);
+
+                        //await dbcontext.SaveChangesAsync();
+
+                        await InvokeAsync(StateHasChanged);
+                    }
+
+
+                }
+                else
+                {
+                    await ShowModal("You are not assigned as admin");
+                }
+
+            }
+            else
+            {
+                await ShowModal("Credential mismatch, Please try again");
+            }
+
+
+        }
+
+
+        isloading = false;
+        await InvokeAsync(StateHasChanged);
+
+
+
+    }
+
+}
