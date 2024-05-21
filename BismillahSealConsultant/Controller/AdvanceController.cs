@@ -66,5 +66,16 @@ namespace BismillahSealConsultant.Controller
                 return Ok(latestAdvances);
             }
         }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateEmployeeLatestAdvances(Guid employeeId, decimal advance)
+        {
+            using (var context = new sealConsultantContext())
+            {
+                var latestAdvance = await context.Advances.Where(a => a.EmployeeId == employeeId).FirstOrDefaultAsync();
+            }
+
+            return Ok();
+        }
     }
 }
